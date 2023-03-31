@@ -17,9 +17,128 @@ from trainer_utils import get_optimizer_grouped_parameters
 
 
 class Input(object):
-    def __init__(self, data, target):
-        self.data = data
-        self.target = target
+    def __init__(self, cfg, df):
+        self.cfg = cfg
+        self.tokenizer = self.cfg.tokenizer
+        self.df = df  # return dataset
+        if self.cfg.gradient_checkpoint:
+            self.save_parameter = f'(best_score) {self.cfg.model_name}_state_dict.pth'  # checkpoint
+
+    # LLRD
+    def get_optimizer_grouped_parameters(self, model, layerwise_lr, layerwise_weight_decay, layerwise_lr_decay):
+        no_decay = ["bias", "LayerNorm.weight"]
+        # initialize lr for task specific layer
+        optimizer_grouped_parameters = [{"params": [p for n, p in model.named_parameters() if "model" not in n],
+                                         "weight_decay": 0.0,
+                                         "lr": layerwise_lr,
+                                         }, ]
+        # initialize lrs for every layer
+        layers = [model.model.embeddings] + list(model.model.encoder.layer)
+        layers.reverse()
+        lr = layerwise_lr
+        for layer in layers:
+            optimizer_grouped_parameters += [
+                {"params": [p for n, p in layer.named_parameters() if not any(nd in n for nd in no_decay)],
+                 "weight_decay": layerwise_weight_decay,
+                 "lr": lr,
+                 },
+                {"params": [p for n, p in layer.named_parameters() if any(nd in n for nd in no_decay)],
+                 "weight_decay": 0.0,
+                 "lr": lr,
+                 }, ]
+            lr *= layerwise_lr_decay
+        return optimizer_grouped_parameters
+
+    def get_optimizer_params(self, model, encoder_lr, decoder_lr, weight_decay):
+        no_decay = ["bias", "LayerNorm.bias", "LayerNorm.weight"]
+        optimizer_parameters = [
+            {'params': [p for n, p in model.model.named_parameters() if not any(nd in n for nd in no_decay)],
+             'lr': encoder_lr, 'weight_decay': weight_decay},
+            {'params': [p for n, p in model.model.named_parameters() if any(nd in n for nd in no_decay)],
+             'lr': encoder_lr, 'weight_decay': 0.0},
+            {'params': [p for n, p in model.named_parameters() if "model" not in n],
+             'lr': decoder_lr, 'weight_decay': 0.0}
+        ]
+        return optimizer_parameters
+
+    def make_batch(self, fold: int):
+        train = self.df[self.df['fold'] != fold].reset_index(drop=True)
+        valid = self.df[self.df['fold'] == fold].reset_index(drop=True)
+
+        # Custom Dataset
+        train_dataset = UPPPMDataset(self.cfg, train)
+        valid_dataset = UPPPMDataset(self.cfg, valid, is_valid=True)
+        valid_labels = valid['scores'].explode().to_numpy()
+
+        # DataLoader
+        loader_train = DataLoader(
+            train_dataset,
+            batch_size=self.cfg.batch_size,
+            shuffle=True,
+            worker_init_fn=seed_worker,
+            generator=g,
+            num_workers=self.cfg.num_workers,
+            pin_memory=True,
+            drop_last=True,
+        )
+
+        loader_valid = DataLoader(
+            valid_dataset,
+            batch_size=self.cfg.batch_size,
+            shuffle=False,
+            worker_init_fn=seed_worker,
+            generator=g,
+            num_workers=self.cfg.num_workers,
+            pin_memory=True,
+            drop_last=False,
+        )
+
+        return loader_train, loader_valid, train, valid, valid_labels
+
+    def model_setting(self):
+        """
+        [model]
+        1) Re-Initialze Weights of Encoder
+           - DeBERTa => Last Two Layers == EMD
+        2) SWA
+           - original model => to.device
+           - after calculate, update swa_model
+        """
+        model = UPPPMModel(self.cfg, n_vocabs=len(self.tokenizer))
+        # model.load_state_dict(torch.load('Token_Classification_Fold0_DeBERTa_V3_Large.pth'))
+        model.to(self.cfg.device)
+        # SWA: Stochastic Weighted Averaging
+        if self.cfg.swa:
+            swa_model = AveragedModel(model)
+        else:
+            swa_model = 'none'
+
+        # Setting Loss_Function
+        # Because we don't need to calculate none-target token: Output will be same shape as input
+        if self.cfg.loss_fn == 'BCE':
+            criterion = nn.BCEWithLogitsLoss(reduction='none')
+        if self.cfg.loss_fn == 'cross_entropy':
+            criterion = nn.CrossEntropyLoss()
+        if self.cfg.loss_fn == 'pearson':
+            criterion = PearsonLoss()
+        if self.cfg.loss_fn == 'RMSE':
+            criterion = RMSELoss()
+
+        # optimizer
+        grouped_optimizer_params = self.get_optimizer_grouped_parameters(
+            model,
+            self.cfg.layerwise_lr,
+            self.cfg.layerwise_weight_decay,
+            self.cfg.layerwise_lr_decay
+        )
+
+        optimizer = AdamW(
+            grouped_optimizer_params,
+            lr=self.cfg.layerwise_lr,
+            eps=self.cfg.layerwise_adam_epsilon,
+            correct_bias=not self.cfg.layerwise_use_bertadam)
+
+        return model, swa_model, criterion, optimizer, self.save_parameter
 
 
 class MPLInput(object):
@@ -249,8 +368,51 @@ class FBPTrainer(BaseTrainer):
         epoch_score = pearson_score(valid_labels, np.array(reduce(lambda a, b: a + b, preds_list)))
         return losses.avg, valid_losses.avg, epoch_score, grad_norm, scheduler.get_lr()[0]
 
-    def swa_fn(self):
-        return
+    def swa_fn(self, cfg, loader_valid, swa_model, criterion, valid_labels):
+        swa_preds_list, swa_label_list = [], []
+        swa_model.eval()
+        swa_valid_losses = AverageMeter()
+
+        with torch.no_grad():
+            for step, (swa_inputs, target_masks, swa_labels) in enumerate(tqdm(loader_valid)):
+                swa_inputs = collate(swa_inputs)
+
+                for k, v in swa_inputs.items():
+                    swa_inputs[k] = v.to(cfg.device)
+
+                swa_labels = swa_labels.to(cfg.device)
+                batch_size = swa_labels.size(0)
+
+                swa_preds = swa_model(swa_inputs)
+
+                swa_valid_loss = criterion(swa_preds.view(-1, 1), swa_labels.view(-1, 1))
+                mask = (swa_labels.view(-1, 1) != -1)
+                swa_valid_loss = torch.masked_select(swa_valid_loss, mask)
+                swa_valid_loss = swa_valid_loss.mean()
+                swa_valid_losses.update(swa_valid_loss, batch_size)
+
+                swa_y_preds = swa_preds.sigmoid().to('cpu').numpy()
+
+                anchorwise_preds = []
+                for pred, target_mask, in zip(swa_y_preds, target_masks):
+                    prev_i = -1
+                    targetwise_pred_scores = []
+                    for i, (p, tm) in enumerate(zip(pred, target_mask)):
+                        if tm != 0:
+                            if i - 1 == prev_i:
+                                targetwise_pred_scores[-1].append(p)
+                            else:
+                                targetwise_pred_scores.append([p])
+                            prev_i = i
+                    for targetwise_pred_score in targetwise_pred_scores:
+                        anchorwise_preds.append(np.mean(targetwise_pred_score))
+
+                swa_preds_list.append(anchorwise_preds)
+        swa_valid_score = pearson_score(valid_labels, np.array(reduce(lambda a, b: a + b, swa_preds_list)))
+        del swa_preds_list, swa_y_preds, swa_labels, anchorwise_preds
+        gc.collect()
+        torch.cuda.empty_cache()
+        return swa_valid_losses.avg, swa_valid_score
 
 
 class MPLTrainer(BaseTrainer):

@@ -31,7 +31,8 @@ class WeightedLayerPooling(nn.Module):
 # Attention pooling
 class AttentionPooling(nn.Module):
     """
-    Reference from => <A STRUCTURED SELF-ATTENTIVE SENTENCE EMBEDDING>
+    [Reference]
+    <A STRUCTURED SELF-ATTENTIVE SENTENCE EMBEDDING>
     """
     def __init__(self, in_dim):
         super().__init__()
@@ -65,12 +66,42 @@ class MeanPooling(nn.Module):
         return mean_embeddings
 
 
+# Max Pooling
+class MaxPooling(nn.Module):
+    def __init__(self):
+        super(MaxPooling, self).__init__()
+
+    @staticmethod
+    def forward(self, last_hidden_state, attention_mask):
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
+        embeddings = last_hidden_state.clone()
+        embeddings[input_mask_expanded == 0] = -1e4
+        max_embeddings, _ = torch.max(embeddings, dim=1)
+        return max_embeddings
+
+
+# Min Pooling
+class MinPooling(nn.Module):
+    def __init__(self):
+        super(MinPooling, self).__init__()
+    @staticmethod
+    def forward(self, last_hidden_state, attention_mask):
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
+        embeddings = last_hidden_state.clone()
+        embeddings[input_mask_expanded == 0] = 1e-4
+        min_embeddings, _ = torch.min(embeddings, dim=1)
+        return min_embeddings
+
+
 # Convolution Pooling
-# for filtering unwanted feature such as Toxicity Text, Negative Comment...etc
+#
 class ConvPooling(nn.Module):
     """
-    Reference from => https://www.kaggle.com/code/rhtsingh/utilizing-transformer-representations-efficiently
+    for filtering unwanted feature such as Toxicity Text, Negative Comment...etc
     kernel_size: similar as window size
+
+    [Reference]
+    https://www.kaggle.com/code/rhtsingh/utilizing-transformer-representations-efficiently
     """
     def __init__(self, feature_size: int, kernel_size: int, padding_size: int):
         super().__init__()
@@ -92,7 +123,8 @@ class ConvPooling(nn.Module):
 # LSTM Pooling
 class LSTMPooling(nn.Module):
     """
-    Reference from => https://www.kaggle.com/code/rhtsingh/utilizing-transformer-representations-efficiently
+    [Reference]
+    https://www.kaggle.com/code/rhtsingh/utilizing-transformer-representations-efficiently
     """
     def __int__(self, num_layers: int, hidden_size: int, hidden_dim_lstm):
         super().__init__()

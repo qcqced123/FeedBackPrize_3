@@ -3,9 +3,7 @@ import torch.nn as nn
 
 
 def get_optimizer_grouped_parameters(self, model, layerwise_lr, layerwise_weight_decay, layerwise_lr_decay):
-    """
-    Grouped Version: Layer-wise learning rate decay
-    """
+    """ Grouped Version: Layer-wise learning rate decay """
     no_decay = ["bias", "LayerNorm.weight"]
     # initialize lr for task specific layer
     optimizer_grouped_parameters = [{"params": [p for n, p in model.named_parameters() if "model" not in n],
@@ -31,9 +29,7 @@ def get_optimizer_grouped_parameters(self, model, layerwise_lr, layerwise_weight
 
 
 def collate(inputs):
-    """
-    Descending sort inputs by length of sequence
-    """
+    """ Descending sort inputs by length of sequence """
     mask_len = int(inputs["attention_mask"].sum(axis=1).max())
     for k, v in inputs.items():
         inputs[k] = inputs[k][:, :mask_len]
@@ -41,9 +37,7 @@ def collate(inputs):
 
 
 class AWP:
-    """
-    Adversarial Weight Perturbation
-    """
+    """ Adversarial Weight Perturbation """
     def __init__(
         self,
         model,
@@ -107,3 +101,21 @@ class AWP:
                 param.data = self.backup[name]
         self.backup = {}
         self.backup_eps = {}
+
+
+class AverageMeter(object):
+    """ Computes and stores the average and current value """
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count

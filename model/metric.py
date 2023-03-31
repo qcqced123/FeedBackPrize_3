@@ -3,22 +3,6 @@ import torch
 from torch import Tensor
 from numpy import ndarray
 
-class AverageMeter(object):
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
-
 
 def accuracy(output, target) -> float:
     with torch.no_grad():
@@ -49,32 +33,42 @@ def pearson_score(y_true, y_pred) -> float:
 
 
 def recall(y_true, y_pred) -> float:
+    """ recall = tp / (tp + fn) """
     y_true = y_true.apply(lambda x: set(x.split()))
     y_pred = y_pred.apply(lambda x: set(x.split()))
     tp = np.array([len(x[0] & x[1]) for x in zip(y_true, y_pred)])
     fp = np.array([len(x[1] - x[0]) for x in zip(y_true, y_pred)])
     fn = np.array([len(x[0] - x[1]) for x in zip(y_true, y_pred)])
-    recall = tp / (tp + fn)
-    return round(recall.mean(), 4)
+    score = tp / (tp + fn)
+    return round(score.mean(), 4)
 
 
 def precision(y_true, y_pred) -> float:
+    """ precision = tp / (tp + fp) """
     y_true = y_true.apply(lambda x: set(x.split()))
     y_pred = y_pred.apply(lambda x: set(x.split()))
     tp = np.array([len(x[0] & x[1]) for x in zip(y_true, y_pred)])
     fp = np.array([len(x[1] - x[0]) for x in zip(y_true, y_pred)])
     fn = np.array([len(x[0] - x[1]) for x in zip(y_true, y_pred)])
-    precision = tp / (tp + fp)
-    return round(precision.mean(), 4)
+    score = tp / (tp + fp)
+    return round(score.mean(), 4)
 
 
-def f2_score(y_true, y_pred) -> float:
+def f_beta(y_true, y_pred, beta: float) -> float:
+    """
+    f_beta = (1 + beta ** 2) * precision * recall / (beta ** 2 * precision + recall)
+    if you want to emphasize precision, set beta < 1, options: 0.3, 0.6
+    if you want to emphasize recall, set beta > 1, options: 1.5, 2
+
+    [Reference]
+    https://blog.naver.com/PostView.naver?blogId=wideeyed&logNo=221531998840&parentCategoryNo=&categoryNo=2&
+    """
     y_true = y_true.apply(lambda x: set(x.split()))
     y_pred = y_pred.apply(lambda x: set(x.split()))
     tp = np.array([len(x[0] & x[1]) for x in zip(y_true, y_pred)])
     fp = np.array([len(x[1] - x[0]) for x in zip(y_true, y_pred)])
     fn = np.array([len(x[0] - x[1]) for x in zip(y_true, y_pred)])
-    precision = tp / (tp + fp)
-    recall = tp / (tp + fn)
-    f2 = tp / (tp + 0.2 * fp + 0.8 * fn)
-    return round(f2.mean(), 4)
+    f_precision = tp / (tp + fp)
+    f_recall = tp / (tp + fn)
+    score = (1 + beta ** 2) * f_precision * f_recall / (beta ** 2 * f_precision + f_recall)
+    return round(score.mean(), 4)

@@ -98,6 +98,177 @@ class BaseTrainer:
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=best)
 
+    def train_with_validation(self):
+        # This is Test Code for Appending Cross-Validaton Strategy (fold to epoch)
+        cfg_list = [CFG]
+        for cfg in cfg_list:
+            # init wandb
+            wandb.init(project="[Append Ver 2]UPPPM Token Classification",
+                       name='[Append Version 2.2]' + 'Fold 0' + cfg.model_name,
+                       config=class2dict(cfg),
+                       group=cfg.model_name,
+                       job_type="train",
+                       entity="qcqced")
+            wandb_config = wandb.config
+            print(f'========================= Retriever Model :{cfg.model_name} =========================')
+            fold_list, swa_score_max = [i for i in range(cfg.n_folds)], -np.inf
+
+            for fold in tqdm(fold_list):
+                print(f'============== {fold + 1}th Fold Train & Validation ==============')
+                val_score_max = -np.inf
+                fold_train_loss_list, fold_valid_loss_list, fold_score_list = [], [], []
+                fold_swa_loss, fold_swa_score = [], []
+
+                train_input = TrainInput(cfg, train_df)  # init object
+                model, swa_model, criterion, optimizer, save_parameter = train_input.model_setting()
+                loader_train, loader_valid, train, valid, valid_labels = train_input.make_batch(fold)
+
+                # Scheduler Setting
+                if cfg.swa:
+                    swa_start = cfg.swa_start
+                    swa_scheduler = SWALR(
+                        optimizer,
+                        swa_lr=cfg.swa_lr,  # Later Append
+                        anneal_epochs=cfg.anneal_epochs,
+                        anneal_strategy=cfg.anneal_strategy
+                    )
+
+                if cfg.scheduler == 'cosine':
+                    scheduler = get_cosine_schedule_with_warmup(
+                        optimizer,
+                        num_warmup_steps=int(
+                            len(train) / cfg.batch_size * cfg.epochs / cfg.n_gradient_accumulation_steps) * cfg.warmup_ratio,
+                        num_training_steps=int(
+                            len(train) / cfg.batch_size * cfg.epochs / cfg.n_gradient_accumulation_steps),
+                        num_cycles=cfg.num_cycles
+                    )
+                elif cfg.scheduler == 'cosine_annealing':
+                    scheduler = get_cosine_with_hard_restarts_schedule_with_warmup(
+                        optimizer,
+                        num_warmup_steps=int(
+                            len(train) / cfg.batch_size * cfg.epochs / cfg.n_gradient_accumulation_steps) * cfg.warmup_ratio,
+                        num_training_steps=int(
+                            len(train) / cfg.batch_size * cfg.epochs / cfg.n_gradient_accumulation_steps),
+                        num_cycles=8
+                    )
+                else:
+                    scheduler = get_linear_schedule_with_warmup(
+                        optimizer,
+                        num_warmup_steps=int(len(train) / cfg.batch_size * cfg.epochs) * cfg.warmup_ratio,
+                        num_training_steps=int(len(train) / cfg.batch_size * cfg.epochs),
+                        num_cycles=cfg.num_cycles
+                    )
+
+                for epoch in range(cfg.epochs):
+                    print(f'[{epoch + 1}/{cfg.epochs}] Train & Validation')
+                    if cfg.swa:
+                        train_loss, valid_loss, score, grad_norm, lr = train_fn(
+                            cfg,
+                            loader_train,
+                            loader_valid,
+                            model,
+                            criterion,
+                            optimizer,
+                            scheduler,
+                            valid,
+                            valid_labels,
+                            int(epoch),
+                            swa_model=swa_model,
+                            swa_start=swa_start,
+                            swa_scheduler=swa_scheduler,
+                        )
+                    else:
+                        train_loss, valid_loss, score = train_fn(
+                            cfg,
+                            loader_train,
+                            loader_valid,
+                            model,
+                            criterion,
+                            optimizer,
+                            scheduler,
+                            valid,
+                            valid_labels,
+                            int(epoch),
+                        )
+
+                    train_loss = train_loss.detach().cpu().numpy()
+                    valid_loss = valid_loss.detach().cpu().numpy()
+                    grad_norm = grad_norm.detach().cpu().numpy()
+
+                    fold_train_loss_list.append(train_loss)
+                    fold_valid_loss_list.append(valid_loss)
+                    fold_score_list.append(score)
+
+                    wandb.log({
+                        '<epoch> Train Loss': train_loss,
+                        '<epoch> Valid Loss': valid_loss,
+                        '<epoch> Pearson_Score': score,
+                        '<epoch> Gradient Norm': grad_norm,
+                        '<epoch> lr': lr
+                    })
+
+                    print(f'[{epoch + 1}/{cfg.epochs}] Train Loss: {np.round(train_loss, 4)}')
+                    print(f'[{epoch + 1}/{cfg.epochs}] Valid Loss: {np.round(valid_loss, 4)}')
+                    print(f'[{epoch + 1}/{cfg.epochs}] Pearson Score: {np.round(score, 4)}')
+                    print(f'[{epoch + 1}/{cfg.epochs}] Gradient Norm: {np.round(grad_norm, 4)}')
+                    print(f'[{epoch + 1}/{cfg.epochs}] lr: {lr}')
+
+                    if val_score_max <= score:
+                        print(f'[Update] Valid Score : ({val_score_max:.4f} => {score:.4f}) Save Parameter')
+                        print(f'Best Score: {score}')
+                        torch.save(model.state_dict(),
+                                   f'Ver2-3_Token_Classification_Fold{fold}_DeBERTa_V3_Large.pth')
+                        val_score_max = score
+
+                del train_loss, valid_loss
+                gc.collect()
+                torch.cuda.empty_cache()
+
+                print(f'================= {fold + 1}th Train & Validation =================')
+                fold_train_loss = np.mean(fold_train_loss_list)
+                fold_valid_loss = np.mean(fold_valid_loss_list)
+                fold_score = np.mean(fold_score_list)
+                wandb.log({f'<Fold{fold + 1}> Train Loss': fold_train_loss,
+                           f'<Fold{fold + 1}> Valid Loss': fold_valid_loss,
+                           f'<Fold{fold + 1}> Pearson_Score': fold_score, })
+                print(f'Fold[{fold + 1}/{fold_list[-1] + 1}] Train Loss: {np.round(fold_train_loss, 4)}')
+                print(f'Fold[{fold + 1}/{fold_list[-1] + 1}] Valid Loss: {np.round(fold_valid_loss, 4)}')
+                print(f'Fold[{fold + 1}/{fold_list[-1] + 1}] Pearson Score: {np.round(fold_score, 4)}')
+
+                if cfg.swa:
+                    update_bn(loader_train, swa_model)  # Stochastic Weight Averaging
+                    fold_swa_loss, fold_swa_score = swa_valid(
+                        cfg,
+                        loader_valid,
+                        swa_model,
+                        criterion,
+                        valid_labels,
+                    )
+                    fold_swa_loss = fold_swa_loss.detach().cpu().numpy()
+                    fold_swa_loss = np.mean(fold_swa_loss)
+                    fold_swa_score = np.mean(fold_swa_score)
+
+                    wandb.log({
+                        f'<Fold{fold + 1}> SWA Valid Loss': fold_swa_loss,
+                        f'<Fold{fold + 1}> SWA Pearson_Score': fold_swa_score,
+                    })
+
+                    print(f'Fold[{fold + 1}/{fold_list[-1] + 1}] SWA Loss: {np.round(fold_swa_loss, 4)}')
+                    print(f'Fold[{fold + 1}/{fold_list[-1] + 1}] SWA Score: {np.round(fold_swa_score, 4)}')
+
+                if val_score_max <= fold_swa_score:
+                    print(f'[Update] Valid Score : ({val_score_max:.4f} => {fold_swa_score:.4f}) Save Parameter')
+                    print(f'Best Score: {fold_swa_score}')
+                    torch.save(model.state_dict(),
+                               f'SWA_Ver2-3_Token_Classification_Fold{fold}_DeBERTa_V3_Large.pth')
+                    val_score_max = fold_score
+
+                del fold_swa_loss
+                gc.collect()
+                torch.cuda.empty_cache()
+
+            wandb.finish()
+
     def _save_checkpoint(self, epoch: int, save_best=False) -> None
         """
         Saving checkpoints
