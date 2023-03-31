@@ -2,8 +2,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from transformers import AutoConfig, AutoModel
-from base import BaseModel
-from model_utils import _init_weight, freeze, reinit_topk
+from ..base.base_model import BaseModel
+from model_utils import init_weights, freeze, reinit_topk
 from pooling import AttentionPooling, WeightedLayerPooling, MeanPooling
 
 
@@ -34,7 +34,7 @@ class FBPModel(BaseModel):
             self.pooling = MeanPooling()
 
         if cfg.reinit:
-            _init_weight(self.fc)
+            init_weights(self.auto_cfg, self.fc)
             reinit_topk(self.backbone, cfg.num_reinit_layers)
 
         if cfg.freeze:
@@ -86,7 +86,7 @@ class TeacherModel(BaseModel):
             self.pooling = MeanPooling()
 
         if cfg.reinit:
-            _init_weight(self.fc)
+            init_weights(self.auto_cfg, self.fc)
             reinit_topk(self.backbone, cfg.num_reinit_layers)
 
         if cfg.freeze:
@@ -138,7 +138,7 @@ class StudentModel(BaseModel):
             self.pooling = MeanPooling()
 
         if cfg.reinit:
-            _init_weight(self.fc)
+            init_weights(self.auto_cfg, self.fc)
             reinit_topk(self.backbone, cfg.num_reinit_layers)
 
         if cfg.freeze:

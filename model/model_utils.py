@@ -1,11 +1,14 @@
+import torch
+import torch.nn as nn
 from torch import Tensor
 
 
 def freeze(module) -> None:
     """
     Freezes module's parameters.
-    freezing embeddings and first 2 layers of encoder
+
     [Example]
+    freezing embeddings and first 2 layers of encoder
     1) freeze(model.embeddings)
     2) freeze(model.encoder.layer[:2])
     """
@@ -13,7 +16,7 @@ def freeze(module) -> None:
         parameter.requires_grad = False
 
 
-def get_freezed_parameters(module) -> list[Tensor]:
+def get_freeze_parameters(module) -> list[Tensor]:
     """
     Returns names of freezed parameters of the given module.
 
@@ -28,22 +31,30 @@ def get_freezed_parameters(module) -> list[Tensor]:
     return freezed_parameters
 
 
-def _init_weight(module) -> None:
+def init_weights(auto_cfg, module) -> None:
     """
     Initializes weights of the given module.
     """
+    if isinstance(module, nn.Linear):
+        module.weight.data.normal_(mean=0.0, std=auto_cfg.initializer_range)
+        if module.bias is not None:
+            module.bias.data.zero_()
+    elif isinstance(module, nn.Embedding):
+        module.weight.data.normal_(mean=0.0, std=auto_cfg.initializer_range)
+        if module.padding_idx is not None:
+            module.weight.data[module.padding_idx].zero_()
+    elif isinstance(module, nn.LayerNorm):
+        module.bias.data.zero_()
+        module.weight.data.fill_(1.0)
 
 
-def reinit_topk(module, topk: int = 2) -> None:
+def reinit_topk(model, num_layers: int = 2) -> None:
     """
-    Reinitializes topk parameters of the given module.
+    Re-initialize the last-k transformer Encoder layers.
+    Encoder Layer: Embedding, Attention Head, LayerNorm, Feed Forward
+    Args:
+        model: The target transformer model.
+        num_layers: The number of layers to be re-initialized.
     """
-    for name, parameter in module.named_parameters():
-        if parameter.requires_grad:
-            if topk > 0:
-                _init_weight(parameter)
-                topk -= 1
-            else:
-                break
-
+    model.encoder.layer[-num_layers:].apply(model.init_weights)
 
