@@ -3,6 +3,19 @@ import torch
 from torchvision.utils import make_grid
 from base import BaseTrainer
 from utils import inf_loop, MetricTracker
+from trainer_utils import get_optimizer_grouped_parameters
+
+
+class Input(object):
+    def __init__(self, data, target):
+        self.data = data
+        self.target = target
+
+
+class MPLInput(object):
+    def __init__(self, data, target):
+        self.data = data
+        self.target = target
 
 
 class Trainer(BaseTrainer):
@@ -108,3 +121,27 @@ class Trainer(BaseTrainer):
             current = batch_idx
             total = self.len_epoch
         return base.format(current, total, 100.0 * current / total)
+
+
+class FBPTrainer(BaseTrainer):
+    def __init__(self, model, criterion, metric_ftns, optimizer, config, device,
+                 data_loader, valid_data_loader=None, lr_scheduler=None, len_epoch=None):
+        super().__init__(model, criterion, metric_ftns, optimizer, config)
+
+    def train_fn(self):
+        return
+
+    def swa_fn(self):
+        return
+
+
+class MPLTrainer(BaseTrainer):
+    def __init__(self, model, criterion, metric_ftns, optimizer, config, device,
+                 data_loader, valid_data_loader=None, lr_scheduler=None, len_epoch=None):
+        super().__init__(model, criterion, metric_ftns, optimizer, config)
+
+    def train_fn(self):
+        return
+
+    def swa_fn(self):
+        return

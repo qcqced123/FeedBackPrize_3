@@ -98,7 +98,7 @@ class BaseTrainer:
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=best)
 
-    def _save_checkpoint(self, epoch, save_best=False):
+    def _save_checkpoint(self, epoch: int, save_best=False) -> None
         """
         Saving checkpoints
 
@@ -123,10 +123,21 @@ class BaseTrainer:
             torch.save(state, best_path)
             self.logger.info("Saving current best: model_best.pth ...")
 
+    def save_parameter(self) -> None:
+        """
+        Save model's parameter which recorded best cross validation score
+        """
+        best_path = self.checkpoint_dir
+        best_name = type(self.model).__name__
+
+        torch.save(
+            self.model.state_dict(),
+            f'{best_path}/{best_name}.pth'
+        )
+
     def _resume_checkpoint(self, resume_path):
         """
         Resume from saved checkpoints
-
         :param resume_path: Checkpoint path to be resumed
         """
         resume_path = str(resume_path)
