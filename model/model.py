@@ -1,22 +1,161 @@
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
+from transformers import AutoConfig, AutoModel
 from base import BaseModel
+from model_utils import _init_weight, freeze, reinit_topk
+from pooling import AttentionPooling, WeightedLayerPooling, MeanPooling
 
 
-class MnistModel(BaseModel):
-    def __init__(self, num_classes=10):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
-        self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
-        self.conv2_drop = nn.Dropout2d()
-        self.fc1 = nn.Linear(320, 50)
-        self.fc2 = nn.Linear(50, num_classes)
+class FBPModel(BaseModel):
+    def __init__(self, cfg):
+        super().__init__(BaseModel, self)
+        self.auto_cfg = AutoConfig.from_pretrained(
+            cfg.model_name,
+            output_hidden_states = True
+        )
+        self.backbone = AutoModel.from_pretrained(
+            cfg.model_name,
+            config = self.auto_cfg
+        )
+        self.fc = nn.Linear(self.auto_cfg.hidden_size, cfg.num_classes)
 
-    def forward(self, x):
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
-        x = x.view(-1, 320)
-        x = F.relu(self.fc1(x))
-        x = F.dropout(x, training=self.training)
-        x = self.fc2(x)
-        return F.log_softmax(x, dim=1)
+        """
+        1) Set pooling method
+        2) Reinit top-k encoder layers, fully connected layer
+        3) Freeze bottom-k encoder layers
+        4) Enable gradient checkpointing
+        """
+        if cfg.pooling == 'attention':
+            self.pooling = AttentionPooling(self.auto_cfg.hidden_size)
+        elif cfg.pooling == 'weighted':
+            self.pooling = WeightedLayerPooling(self.auto_cfg.num_hidden_layers, cfg.layer_start, cfg.layer_weights)
+        elif cfg.pooling == 'mean':
+            self.pooling = MeanPooling()
+
+        if cfg.reinit:
+            _init_weight(self.fc)
+            reinit_topk(self.backbone, cfg.num_reinit_layers)
+
+        if cfg.freeze:
+            freeze(self.backbone)
+
+        if cfg.gradient_checkpointing:
+            self.backbone.gradient_checkpointing_enable()
+
+    def feature(self, inputs: dict):
+        outputs = self.backbone(**inputs)
+        return outputs
+
+    def forward(self, inputs: dict) -> list[Tensor]:
+        outputs = self.feature(**inputs)
+        embedding = self.pooling(
+            outputs.last_hidden_state,
+            inputs['attention_mask']
+        )
+        logit = self.fc(embedding)
+        return logit
+
+
+class TeacherModel(BaseModel):
+    """
+    Teacher model for Meta Pseudo Label Pipeline
+    """
+    def __init__(self, cfg):
+        super().__init__(BaseModel, self)
+        self.auto_cfg = AutoConfig.from_pretrained(
+            cfg.model_name,
+            output_hidden_states=True
+        )
+        self.backbone = AutoModel.from_pretrained(
+            cfg.model_name,
+            config=self.auto_cfg
+        )
+        self.fc = nn.Linear(self.auto_cfg.hidden_size, cfg.num_classes)
+        """
+        1) Set pooling method
+        2) Reinit top-k encoder layers, fully connected layer
+        3) Freeze bottom-k encoder layers
+        4) Enable gradient checkpointing
+        """
+        if cfg.pooling == 'attention':
+            self.pooling = AttentionPooling(self.auto_cfg.hidden_size)
+        elif cfg.pooling == 'weighted':
+            self.pooling = WeightedLayerPooling(self.auto_cfg.num_hidden_layers, cfg.layer_start, cfg.layer_weights)
+        elif cfg.pooling == 'mean':
+            self.pooling = MeanPooling()
+
+        if cfg.reinit:
+            _init_weight(self.fc)
+            reinit_topk(self.backbone, cfg.num_reinit_layers)
+
+        if cfg.freeze:
+            freeze(self.backbone)
+
+        if cfg.gradient_checkpointing:
+            self.backbone.gradient_checkpointing_enable()
+
+    def feature(self, inputs: dict):
+        outputs = self.backbone(**inputs)
+        return outputs
+
+    def forward(self, inputs: dict) -> list[Tensor]:
+        outputs = self.feature(**inputs)
+        embedding = self.pooling(
+            outputs.last_hidden_state,
+            inputs['attention_mask']
+        )
+        logit = self.fc(embedding)
+        return logit
+
+
+class StudentModel(BaseModel):
+    """
+    Student model for Meta Pseudo Label Pipeline
+    """
+    def __init__(self, cfg):
+        super().__init__(BaseModel, self)
+        self.auto_cfg = AutoConfig.from_pretrained(
+            cfg.model_name,
+            output_hidden_states=True
+        )
+        self.backbone = AutoModel.from_pretrained(
+            cfg.model_name,
+            config=self.auto_cfg
+        )
+        self.fc = nn.Linear(self.auto_cfg.hidden_size, cfg.num_classes)
+        """
+        1) Set pooling method
+        2) Reinit top-k encoder layers, fully connected layer
+        3) Freeze bottom-k encoder layers
+        4) Enable gradient checkpointing
+        """
+        if cfg.pooling == 'attention':
+            self.pooling = AttentionPooling(self.auto_cfg.hidden_size)
+        elif cfg.pooling == 'weighted':
+            self.pooling = WeightedLayerPooling(self.auto_cfg.num_hidden_layers, cfg.layer_start, cfg.layer_weights)
+        elif cfg.pooling == 'mean':
+            self.pooling = MeanPooling()
+
+        if cfg.reinit:
+            _init_weight(self.fc)
+            reinit_topk(self.backbone, cfg.num_reinit_layers)
+
+        if cfg.freeze:
+            freeze(self.backbone)
+
+        if cfg.gradient_checkpointing:
+            self.backbone.gradient_checkpointing_enable()
+
+    def feature(self, inputs: dict):
+        outputs = self.backbone(**inputs)
+        return outputs
+
+    def forward(self, inputs: dict) -> list[Tensor]:
+        outputs = self.feature(**inputs)
+        embedding = self.pooling(
+            outputs.last_hidden_state,
+            inputs['attention_mask']
+        )
+        logit = self.fc(embedding)
+        return logit

@@ -12,9 +12,9 @@ class BaseTrainer:
         self.config = config
         self.logger = config.get_logger('trainer', config['trainer']['verbosity'])
 
-        self.model = model
-        self.criterion = criterion
-        self.metric_ftns = metric_ftns
+        self.model = model # 여기 지우고
+        self.criterion = criterion # 여기 지우고
+        self.metric_ftns = metric_ftns # 여기 지우고
         self.optimizer = optimizer
 
         cfg_trainer = config['trainer']
@@ -39,7 +39,7 @@ class BaseTrainer:
 
         self.checkpoint_dir = config.save_dir
 
-        # setup visualization writer instance                
+        # setup visualization writer instance
         self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
 
         if config.resume is not None:
