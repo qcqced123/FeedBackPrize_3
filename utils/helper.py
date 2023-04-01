@@ -1,6 +1,7 @@
 import torch, os, sys, random
 import numpy as np
 
+
 def check_device() -> bool:
     return torch.mps.is_available()
 

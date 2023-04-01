@@ -1,11 +1,12 @@
 {
     "name": "FBP3_Base_Trainer",
-    "n_gpu": 1,
-
     "arch": {
         "type": "FBPModel",
         "args": {}
     },
+    "wandb": true,
+    "n_gpu": 1,
+    "seed": 42,
     "data_loader": {
         "type": "MnistDataLoader",
         "args":{
@@ -24,7 +25,16 @@
             "amsgrad": true
         }
     },
-    "loss": "nll_loss",
+    "swa": {
+        "swa": true,
+        "swa_start": 10,
+        "swa_freq": 5,
+        "swa_lr": 0.05
+    },
+    "loss": {
+        "type": "CrossEntropyLoss",
+        "args": {}
+    },
     "metrics": [
         "accuracy", "top_k_acc"
     ],
@@ -46,13 +56,5 @@
         "early_stop": 10,
 
         "tensorboard": true
-    },
-    "swa": {
-        "swa": true,
-        "swa_start": ,
-        "swa_freq": 5,
-        "swa_lr": 0.05
-    },
-    "seed" : 42,
-
+    }
 }

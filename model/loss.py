@@ -29,7 +29,7 @@ class MCRMSELoss(nn.Module):
         return score
 
 
-# Pearson Correlations Coeffiicient Loss
+# Pearson Correlations Co-efficient Loss
 class PearsonLoss(nn.Module):
     def __init__(self):
         super().__init__()
@@ -45,3 +45,24 @@ class PearsonLoss(nn.Module):
         corr = torch.maximum(torch.minimum(corr, torch.tensor(1)), torch.tensor(-1))
         return torch.sub(torch.tensor(1), corr ** 2)
 
+
+# Cross-Entropy Loss
+class CrossEntropyLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    @staticmethod
+    def forward(y_pred, y_true) -> Tensor:
+        criterion = nn.CrossEntropyLoss()
+        return criterion(y_pred, y_true)
+
+
+# Binary Cross-Entropy Loss
+class BinaryCrossEntropyLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    @staticmethod
+    def forward(y_pred, y_true) -> Tensor:
+        criterion = nn.BCEWithLogitsLoss()
+        return criterion(y_pred, y_true)

@@ -28,6 +28,19 @@ def get_optimizer_grouped_parameters(self, model, layerwise_lr, layerwise_weight
     return optimizer_grouped_parameters
 
 
+def get_optimizer_params(self, model, encoder_lr, decoder_lr, weight_decay):
+    no_decay = ["bias", "LayerNorm.bias", "LayerNorm.weight"]
+    optimizer_parameters = [
+        {'params': [p for n, p in model.model.named_parameters() if not any(nd in n for nd in no_decay)],
+         'lr': encoder_lr, 'weight_decay': weight_decay},
+        {'params': [p for n, p in model.model.named_parameters() if any(nd in n for nd in no_decay)],
+         'lr': encoder_lr, 'weight_decay': 0.0},
+        {'params': [p for n, p in model.named_parameters() if "model" not in n],
+         'lr': decoder_lr, 'weight_decay': 0.0}
+    ]
+    return optimizer_parameters
+
+
 def collate(inputs):
     """ Descending sort inputs by length of sequence """
     mask_len = int(inputs["attention_mask"].sum(axis=1).max())

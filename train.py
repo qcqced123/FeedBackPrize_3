@@ -11,13 +11,6 @@ from trainer import Trainer
 from utils import prepare_device
 
 
-# fix random seeds for reproducibility
-SEED = 123
-torch.manual_seed(SEED)
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
-np.random.seed(SEED)
-
 def main(config):
     logger = config.get_logger('train')
 
@@ -44,12 +37,17 @@ def main(config):
     optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
     lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
 
-    trainer = Trainer(model, criterion, metrics, optimizer,
-                      config=config,
-                      device=device,
-                      data_loader=data_loader,
-                      valid_data_loader=valid_data_loader,
-                      lr_scheduler=lr_scheduler)
+    trainer = Trainer(
+        model,
+        criterion,
+        metrics,
+        optimizer,
+        config=config,
+        device=device,
+        data_loader=data_loader,
+        valid_data_loader=valid_data_loader,
+        lr_scheduler=lr_scheduler
+    )
 
     trainer.train()
 
