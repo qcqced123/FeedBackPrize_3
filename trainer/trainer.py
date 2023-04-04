@@ -4,7 +4,7 @@ import dataset_class.dataclass as dataset_class
 import model.loss as model_loss
 import model.model as model_arch
 from functools import reduce
-from torch.optim.swa_utils import AveragedModel, SWALR, update_bn
+from torch.optim.swa_utils import AveragedModel
 from torch.utils.data import DataLoader
 from transformers import AdamW
 
@@ -12,6 +12,7 @@ from dataset_class.text_preprocessing import *
 from utils.helper import *
 from trainer_utils import *
 from model.metric import *
+
 
 class FBPTrainer:
     def __init__(self, cfg, generator):
@@ -79,12 +80,12 @@ class FBPTrainer:
             self.cfg.layerwise_weight_decay,
             self.cfg.layerwise_lr_decay
         )
-        optimizer = AdamW(
+        optimizer = getattr(torch.optim, self.cfg.optimizer)(
             grouped_optimizer_params,
             lr=self.cfg.layerwise_lr,
             eps=self.cfg.layerwise_adam_epsilon,
-            correct_bias=not self.cfg.layerwise_use_bertadam)
-
+            correct_bias=not self.cfg.layerwise_use_bertadam
+        )
         return model, swa_model, criterion, optimizer, self.save_parameter
 
     # Step 3.1 Train & Validation Function
@@ -116,28 +117,15 @@ class FBPTrainer:
                 mask = (labels.view(-1, 1) != -1)
                 loss = torch.masked_select(loss, mask).mean()  # reduction = mean
                 losses.update(loss, batch_size)
-                """
-                [gradient_accumlation]
-                - GPU VRAM OVER 문제해결을 위해 사용
-                - epoch이 사용자 지정 에폭 횟수를 넘을 때까지 Backward 하지 않고 그라디언트 축적
-                - 지정 epoch 넘어가면 한 번에 Backward
-                """
                 if self.cfg.n_gradient_accumulation_steps > 1:
                     loss = loss / self.cfg.n_gradient_accumulation_steps
-
             scaler.scale(loss).backward()
-            """
-            [Adversarial Weight Training]
-            """
+
             if self.cfg.awp and epoch >= self.cfg.nth_awp_start_epoch:
                 loss = awp.attack_backward(inputs, labels)
                 scaler.scale(loss).backward()
                 awp._restore()
 
-            """
-            1) Clipping Gradient && Gradient Accumlation
-            2) Stochastic Weight Averaging
-            """
             if self.cfg.clipping_grad and ((step + 1) % self.cfg.n_gradient_accumulation_steps == 0 or self.cfg.n_gradient_accumulation_steps == 1):
                 scaler.unscale_(optimizer)
                 grad_norm = torch.nn.utils.clip_grad_norm(
