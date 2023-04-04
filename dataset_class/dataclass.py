@@ -1,18 +1,16 @@
 import torch
 from torch.utils.data import Dataset
-
 from text_preprocessing import *
-from base import BaseDataLoader
 
 
 class FBPDataset(Dataset):
     """
     For Supervised Learning Pipeline
     """
-    def __init__(self, tokenizer):
+    def __init__(self, tokenizer, df):
         super().__init__()
-        self.df = text_preprocess(load_data('../data/FB3_Dataset/train.csv'))
-        self.tokenizer = tokenizer
+        self.tokenizer = tokenizer  # get from train.py
+        self.df = df
 
     def tokenizing(self, text):
         inputs = self.tokenizer(
@@ -39,6 +37,7 @@ class FBPDataset(Dataset):
 class MPLDataset(Dataset):
     """
     For Semi-Supervised Learning, Meta Pseudo Labels Pipeline
+    여기 df 받아 오는 구조 변경 필요함
     """
     def __init__(self, tokenizer):
         super().__init__()

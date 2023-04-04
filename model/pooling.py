@@ -6,13 +6,13 @@ import torch.nn.functional as F
 
 # WeightedLayerPooling: Use Intermediate Layer's Embedding
 class WeightedLayerPooling(nn.Module):
-    def __init__(self, num_hidden_layers, layer_start: int = 4, layer_weights = None):
+    def __init__(self, auto_cfg, num_hidden_layers, layer_start: int = 4, layer_weights = None):
         super(WeightedLayerPooling, self).__init__()
         self.layer_start = layer_start
-        self.num_hidden_layers = num_hidden_layers
+        self.num_hidden_layers = auto_cfg.num_hidden_layers
         self.layer_weights = layer_weights if layer_weights is not None \
             else nn.Parameter(
-                torch.tensor([1] * (num_hidden_layers+1 - layer_start), dtype=torch.float)
+                torch.tensor([1] * (self.num_hidden_layers+1 - layer_start), dtype=torch.float)
             )
 
     def forward(self, features) -> Tensor:
@@ -34,13 +34,13 @@ class AttentionPooling(nn.Module):
     [Reference]
     <A STRUCTURED SELF-ATTENTIVE SENTENCE EMBEDDING>
     """
-    def __init__(self, in_dim):
+    def __init__(self, auto_cfg):
         super().__init__()
         self.attention = nn.Sequential(
-           nn.Linear(in_dim, in_dim),
-           nn.LayerNorm(in_dim),
+           nn.Linear(auto_cfg.hidden_size, auto_cfg.hidden_size),
+           nn.LayerNorm(auto_cfg.hidden_size),
            nn.GELU(),
-           nn.Linear(in_dim, 1),
+           nn.Linear(auto_cfg.hidden_size, 1),
         )
 
     def forward(self, last_hidden_state, attention_mask) -> Tensor:
@@ -53,11 +53,11 @@ class AttentionPooling(nn.Module):
 
 # Mean Pooling
 class MeanPooling(nn.Module):
-    def __init__(self):
+    def __init__(self, auto_cfg):
         super(MeanPooling, self).__init__()
 
     @staticmethod
-    def forward(self, last_hidden_state, attention_mask) -> Tensor:
+    def forward(last_hidden_state, attention_mask) -> Tensor:
         input_mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
         sum_embeddings = torch.sum(last_hidden_state * input_mask_expanded, 1)
         sum_mask = input_mask_expanded.sum(1)
@@ -68,11 +68,11 @@ class MeanPooling(nn.Module):
 
 # Max Pooling
 class MaxPooling(nn.Module):
-    def __init__(self):
+    def __init__(self, auto_cfg):
         super(MaxPooling, self).__init__()
 
     @staticmethod
-    def forward(self, last_hidden_state, attention_mask):
+    def forward(last_hidden_state, attention_mask):
         input_mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
         embeddings = last_hidden_state.clone()
         embeddings[input_mask_expanded == 0] = -1e4
@@ -82,10 +82,11 @@ class MaxPooling(nn.Module):
 
 # Min Pooling
 class MinPooling(nn.Module):
-    def __init__(self):
+    def __init__(self, auto_cfg):
         super(MinPooling, self).__init__()
+
     @staticmethod
-    def forward(self, last_hidden_state, attention_mask):
+    def forward(last_hidden_state, attention_mask):
         input_mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
         embeddings = last_hidden_state.clone()
         embeddings[input_mask_expanded == 0] = 1e-4
@@ -94,7 +95,6 @@ class MinPooling(nn.Module):
 
 
 # Convolution Pooling
-#
 class ConvPooling(nn.Module):
     """
     for filtering unwanted feature such as Toxicity Text, Negative Comment...etc

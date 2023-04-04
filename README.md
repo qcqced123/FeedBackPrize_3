@@ -109,7 +109,7 @@ Config files are in `.json` format:
 
     }                
   },
-  "data_loader": {
+  "dataset_class": {
     "type": "MnistDataLoader",         // selecting data loader
     "args":{
       "data_dir": "data/",             // dataset path
@@ -200,7 +200,7 @@ you can change some of them using CLI flags.
   CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')
   options = [
       CustomArgs(['--lr', '--learning_rate'], type=float, target=('optimizer', 'args', 'lr')),
-      CustomArgs(['--bs', '--batch_size'], type=int, target=('data_loader', 'args', 'batch_size'))
+      CustomArgs(['--bs', '--batch_size'], type=int, target=('dataset_class', 'args', 'batch_size'))
       # options added here can be modified by command line flags.
   ]
   ```

@@ -37,7 +37,6 @@ def recall(y_true, y_pred) -> float:
     y_true = y_true.apply(lambda x: set(x.split()))
     y_pred = y_pred.apply(lambda x: set(x.split()))
     tp = np.array([len(x[0] & x[1]) for x in zip(y_true, y_pred)])
-    fp = np.array([len(x[1] - x[0]) for x in zip(y_true, y_pred)])
     fn = np.array([len(x[0] - x[1]) for x in zip(y_true, y_pred)])
     score = tp / (tp + fn)
     return round(score.mean(), 4)
@@ -49,7 +48,6 @@ def precision(y_true, y_pred) -> float:
     y_pred = y_pred.apply(lambda x: set(x.split()))
     tp = np.array([len(x[0] & x[1]) for x in zip(y_true, y_pred)])
     fp = np.array([len(x[1] - x[0]) for x in zip(y_true, y_pred)])
-    fn = np.array([len(x[0] - x[1]) for x in zip(y_true, y_pred)])
     score = tp / (tp + fp)
     return round(score.mean(), 4)
 

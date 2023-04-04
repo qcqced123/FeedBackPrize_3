@@ -1,9 +1,23 @@
+import re
 import pandas as pd
 import numpy as np
-import re, os, sys, random, time, datetime, nltk
+from sklearn.model_selection import KFold
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer, PorterStemmer
 from tqdm.auto import tqdm
+
+
+def k_fold(df: pd.DataFrame, cfg) -> pd.DataFrame:
+    """ 수정 필요 """
+    kfold = KFold(
+        n_splits=cfg.n_folds,
+        shuffle=True,
+        random_state=cfg.seed
+    )
+    df['fold'] = -1
+    for num, (tx, vx) in enumerate(kfold.split(df)):
+        df["fold"] = num
+    return df
 
 
 def load_data(data_path: str) -> pd.DataFrame:
@@ -14,7 +28,7 @@ def load_data(data_path: str) -> pd.DataFrame:
     return df
 
 
-def text_preprocess(df: pd.Dataframe) -> pd.DataFrame:
+def text_preprocess(df: pd.Dataframe, cfg) -> pd.DataFrame:
     """
     For FB3 Text Data
     FB3 Text data has '\n\n', meaning that separate paragraphs are separated by '\n\n'
@@ -23,6 +37,8 @@ def text_preprocess(df: pd.Dataframe) -> pd.DataFrame:
     text_list = df['full_text'].values.to_list()
     text_list = [text.replace('\n\n', '[PARAGRAPH] ') for text in text_list]
     df['full_text'] = text_list
+    df.reset_index(drop=True, inplace=True)
+    df = k_fold(df, cfg)
     return df
 
 
@@ -94,7 +110,7 @@ def fb2_preprocess(df: pd.DataFrame) -> pd.DataFrame:
     return tmp_df
 
 
-def pseudo_dataframe(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
+def pseudo_dataframe(df1: pd.DataFrame, df2: pd.DataFrame, cfg) -> pd.DataFrame:
     """
     Make Pseudo DataFrame for Meta Pseudo Labeling
     Data from FB1 and FB2 are combined
@@ -102,6 +118,8 @@ def pseudo_dataframe(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     pseudo_df = pd.DataFrame(columns=['text_id', 'full_text'])
     df1 = pd.concat([df1, df2], axis=0, join='union')
     pseudo_df = pd.concat([pseudo_df, df1], axis=0, join='union')
+    pseudo_df.reset_index(drop=True, inplace=True)
+    pseudo_df = k_fold(pseudo_df, cfg)
     return pseudo_df
 
 
@@ -150,3 +168,5 @@ def normalize_words(words: np.ndarray, unique=True) -> list:
     else:
         words = __normalize_words(words)
     return words
+
+

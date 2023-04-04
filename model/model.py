@@ -1,37 +1,24 @@
 import torch.nn as nn
-import torch.nn.functional as F
+import pooling as pooling
 from torch import Tensor
 from transformers import AutoConfig, AutoModel
-from ..base.base_model import BaseModel
 from model_utils import init_weights, freeze, reinit_topk
-from pooling import AttentionPooling, WeightedLayerPooling, MeanPooling
 
 
-class FBPModel(BaseModel):
+class FBPModel(nn.Module):
+    """ Model class for Baseline Pipeline """
     def __init__(self, cfg):
-        super().__init__(BaseModel, self)
+        super().__init__()
         self.auto_cfg = AutoConfig.from_pretrained(
-            cfg.model_name,
-            output_hidden_states = True
+            cfg.backbone,
+            output_hidden_states=True
         )
         self.backbone = AutoModel.from_pretrained(
-            cfg.model_name,
-            config = self.auto_cfg
+            cfg.backbone,
+            config=self.auto_cfg
         )
-        self.fc = nn.Linear(self.auto_cfg.hidden_size, cfg.num_classes)
-
-        """
-        1) Set pooling method
-        2) Reinit top-k encoder layers, fully connected layer
-        3) Freeze bottom-k encoder layers
-        4) Enable gradient checkpointing
-        """
-        if cfg.pooling == 'attention':
-            self.pooling = AttentionPooling(self.auto_cfg.hidden_size)
-        elif cfg.pooling == 'weighted':
-            self.pooling = WeightedLayerPooling(self.auto_cfg.num_hidden_layers, cfg.layer_start, cfg.layer_weights)
-        elif cfg.pooling == 'mean':
-            self.pooling = MeanPooling()
+        self.fc = nn.Linear(self.auto_cfg.hidden_size, 6)
+        self.pooling = getattr(pooling, cfg.pooling)(self.auto_cfg)
 
         if cfg.reinit:
             init_weights(self.auto_cfg, self.fc)
@@ -57,12 +44,12 @@ class FBPModel(BaseModel):
         return logit
 
 
-class TeacherModel(BaseModel):
+class TeacherModel(nn.Module):
     """
     Teacher model for Meta Pseudo Label Pipeline
     """
     def __init__(self, cfg):
-        super().__init__(BaseModel, self)
+        super().__init__()
         self.auto_cfg = AutoConfig.from_pretrained(
             cfg.model_name,
             output_hidden_states=True
@@ -72,18 +59,7 @@ class TeacherModel(BaseModel):
             config=self.auto_cfg
         )
         self.fc = nn.Linear(self.auto_cfg.hidden_size, cfg.num_classes)
-        """
-        1) Set pooling method
-        2) Reinit top-k encoder layers, fully connected layer
-        3) Freeze bottom-k encoder layers
-        4) Enable gradient checkpointing
-        """
-        if cfg.pooling == 'attention':
-            self.pooling = AttentionPooling(self.auto_cfg.hidden_size)
-        elif cfg.pooling == 'weighted':
-            self.pooling = WeightedLayerPooling(self.auto_cfg.num_hidden_layers, cfg.layer_start, cfg.layer_weights)
-        elif cfg.pooling == 'mean':
-            self.pooling = MeanPooling()
+        self.pooling = getattr(pooling, cfg.pooling)(self.auto_cfg)
 
         if cfg.reinit:
             init_weights(self.auto_cfg, self.fc)
@@ -109,12 +85,12 @@ class TeacherModel(BaseModel):
         return logit
 
 
-class StudentModel(BaseModel):
+class StudentModel(nn.Module):
     """
     Student model for Meta Pseudo Label Pipeline
     """
     def __init__(self, cfg):
-        super().__init__(BaseModel, self)
+        super().__init__()
         self.auto_cfg = AutoConfig.from_pretrained(
             cfg.model_name,
             output_hidden_states=True
@@ -124,18 +100,7 @@ class StudentModel(BaseModel):
             config=self.auto_cfg
         )
         self.fc = nn.Linear(self.auto_cfg.hidden_size, cfg.num_classes)
-        """
-        1) Set pooling method
-        2) Reinit top-k encoder layers, fully connected layer
-        3) Freeze bottom-k encoder layers
-        4) Enable gradient checkpointing
-        """
-        if cfg.pooling == 'attention':
-            self.pooling = AttentionPooling(self.auto_cfg.hidden_size)
-        elif cfg.pooling == 'weighted':
-            self.pooling = WeightedLayerPooling(self.auto_cfg.num_hidden_layers, cfg.layer_start, cfg.layer_weights)
-        elif cfg.pooling == 'mean':
-            self.pooling = MeanPooling()
+        self.pooling = getattr(pooling, cfg.pooling)(self.auto_cfg)
 
         if cfg.reinit:
             init_weights(self.auto_cfg, self.fc)
