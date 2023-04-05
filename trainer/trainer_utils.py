@@ -1,4 +1,6 @@
+import re
 import torch
+import transformers
 
 
 def get_optimizer_grouped_parameters(model, layerwise_lr, layerwise_weight_decay, layerwise_lr_decay):
@@ -46,6 +48,42 @@ def collate(inputs):
     for k, v in inputs.items():
         inputs[k] = inputs[k][:, :mask_len]
     return inputs
+
+
+def get_swa_scheduler(cfg, optimizer):
+    """  SWA Scheduler """
+    swa_scheduler = getattr(torch.optim.swa_utils, 'SWALR')(
+        optimizer,
+        swa_lr=cfg.swa_lr,
+        anneal_epochs=cfg.anneal_epochs,
+        anneal_strategy=cfg.anneal_strategy
+    )
+    return swa_scheduler
+
+
+def get_scheduler(cfg, optimizer, len_train: int):
+    """ Select Scheduler Function """
+    scheduler_dict = {
+        'cosine_annealing': 'get_cosine_with_hard_restarts_schedule_with_warmup',
+        'cosine': 'get_cosine_schedule_with_warmup',
+        'linear': 'get_linear_schedule_with_warmup'
+    }
+    lr_scheduler = getattr(transformers, scheduler_dict[cfg.scheduler])(
+        optimizer,
+        num_warmup_steps=int(len_train/cfg.batch_size * cfg.epochs/cfg.n_gradient_accumulation_steps) * cfg.warmup_ratio,
+        num_training_steps=int(len_train/cfg.batch_size * cfg.epochs/cfg.n_gradient_accumulation_steps),
+        num_cycles=cfg.num_cycles
+    )
+    return lr_scheduler
+
+
+def get_name(cfg) -> str:
+    """ get name of model """
+    try:
+        name = cfg.backbone.replace('/', '-')
+    except ValueError:
+        name = cfg.backbone
+    return name
 
 
 class AWP:

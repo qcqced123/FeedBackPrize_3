@@ -52,7 +52,7 @@ def precision(y_true, y_pred) -> float:
     return round(score.mean(), 4)
 
 
-def f_beta(y_true, y_pred, beta: float) -> float:
+def f_beta(y_true, y_pred, beta: float = 2) -> float:
     """
     f_beta = (1 + beta ** 2) * precision * recall / (beta ** 2 * precision + recall)
     if you want to emphasize precision, set beta < 1, options: 0.3, 0.6

@@ -1,5 +1,6 @@
-from transformers import AutoConfig, AutoModel, AutoTokenizer
-from model.metric import *
+import torch
+from transformers import AutoTokenizer
+# from model.metric import *
 
 
 class CFG:

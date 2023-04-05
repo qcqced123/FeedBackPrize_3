@@ -1,22 +1,39 @@
-import re
+import re, gc
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import KFold
+from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer, PorterStemmer
 from tqdm.auto import tqdm
 
 
-def k_fold(df: pd.DataFrame, cfg) -> pd.DataFrame:
-    """ 수정 필요 """
-    kfold = KFold(
+def kfold(df: pd.DataFrame, cfg) -> pd.DataFrame:
+    """ KFold """
+    fold = KFold(
         n_splits=cfg.n_folds,
         shuffle=True,
         random_state=cfg.seed
     )
     df['fold'] = -1
-    for num, (tx, vx) in enumerate(kfold.split(df)):
-        df["fold"] = num
+    for num, (tx, vx) in enumerate(fold.split(df)):
+        df.loc[vx, "fold"] = int(num)
+    return df
+
+
+def mls_kfold(df: pd.DataFrame, cfg) -> pd.DataFrame:
+    """ Multilabel Stratified KFold """
+    tmp_df = df.copy()
+    y = pd.get_dummies(data=tmp_df.iloc[:, 2:8], columns=tmp_df.columns[2:8])
+    fold = MultilabelStratifiedKFold(
+        n_splits=cfg.n_folds,
+        shuffle=True,
+        random_state=cfg.seed
+    )
+    for num, (tx, vx) in enumerate(fold.split(X=df, y=y)):
+        df.loc[vx, "fold"] = int(num)
+    del tmp_df
+    gc.collect()
     return df
 
 
@@ -28,17 +45,17 @@ def load_data(data_path: str) -> pd.DataFrame:
     return df
 
 
-def text_preprocess(df: pd.Dataframe, cfg) -> pd.DataFrame:
+def text_preprocess(df: pd.DataFrame, cfg) -> pd.DataFrame:
     """
     For FB3 Text Data
     FB3 Text data has '\n\n', meaning that separate paragraphs are separated by '\n\n'
     DeBERTa does not handle '\n\n' well, so we need to change them into token '[PARAGRAPH]'
     """
-    text_list = df['full_text'].values.to_list()
+    text_list = df['full_text'].values.tolist()
     text_list = [text.replace('\n\n', '[PARAGRAPH] ') for text in text_list]
     df['full_text'] = text_list
     df.reset_index(drop=True, inplace=True)
-    df = k_fold(df, cfg)
+    df = mls_kfold(df, cfg)
     return df
 
 
@@ -72,7 +89,7 @@ def fb1_preprocess(df: pd.DataFrame) -> pd.DataFrame:
                 unique_id += 1
 
             else:
-                essay += df.iloc[idx, 4] + '[PARAGRAPH]'
+                essay += df.iloc[idx, 1] + '[PARAGRAPH]'
     return tmp_df
 
 
@@ -106,7 +123,7 @@ def fb2_preprocess(df: pd.DataFrame) -> pd.DataFrame:
                 unique_id += 1
 
             else:
-                essay += df.iloc[idx, 4] + '[PARAGRAPH]'
+                essay += df.iloc[idx, 1] + '[PARAGRAPH]'
     return tmp_df
 
 
@@ -115,11 +132,9 @@ def pseudo_dataframe(df1: pd.DataFrame, df2: pd.DataFrame, cfg) -> pd.DataFrame:
     Make Pseudo DataFrame for Meta Pseudo Labeling
     Data from FB1 and FB2 are combined
     """
-    pseudo_df = pd.DataFrame(columns=['text_id', 'full_text'])
-    df1 = pd.concat([df1, df2], axis=0, join='union')
-    pseudo_df = pd.concat([pseudo_df, df1], axis=0, join='union')
+    pseudo_df = pd.concat([df1, df2], axis=0, ignore_index=True)
     pseudo_df.reset_index(drop=True, inplace=True)
-    pseudo_df = k_fold(pseudo_df, cfg)
+    pseudo_df = kfold(pseudo_df, cfg)
     return pseudo_df
 
 

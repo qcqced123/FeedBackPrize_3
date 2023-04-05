@@ -4,30 +4,20 @@ from omegaconf import OmegaConf
 
 from configuration import CFG
 from parse_config import ConfigParser
-from trainer import FBPTrainer, MPLTrainer
+from trainer.train_loop import *
 from utils.helper import check_library, all_type_seed
 from utils import sync_config
 
 
 check_library(True)
 all_type_seed(CFG, True)
-g = torch.Generator()
-g.manual_seed(CFG.seed)
 
 
 def main(config_path: str, cli_options) -> None:
-    """
-    1) init_obj
-        Finds a function handle with the name given as 'type' in config, and returns the
-        instance initialized with corresponding arguments given.
-
-        `object = config.init_obj('name', module, a, b=1)`
-        is equivalent to
-        `object = module.name(a, b=1)`
-    """
     sync_config(OmegaConf.load(config_path))  # load json config
     cfg = OmegaConf.structured(CFG)
-    OmegaConf.merge(cfg, cli_options) # merge with cli_options
+    OmegaConf.merge(cfg, cli_options)  # merge with cli_options
+    train_loop(cfg)
 
 
 if __name__ == '__main__':

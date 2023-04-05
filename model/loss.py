@@ -28,6 +28,27 @@ class MCRMSELoss(nn.Module):
         return score
 
 
+# Weighted MCRMSE Loss => Apply different loss rate per target classes
+class WeightMCRMSELoss(nn.Module):
+    """
+    Apply loss rate per target classes
+
+    [Reference]
+    https://www.kaggle.com/competitions/feedback-prize-english-language-learning/discussion/369609
+    """
+    def __init__(self, reduction, num_scored=6):
+        super().__init__()
+        self.RMSE = RMSELoss(reduction=reduction)
+        self.num_scored = num_scored
+        self._loss_rate = torch.tensor([0.21, 0.16, 0.10, 0.16, 0.21, 0.16], dtype=torch.float32)
+
+    def forward(self, yhat, y):
+        score = 0
+        for i in range(self.num_scored):
+            score += self.RMSE(yhat[:, i], y[:, i]) * self._loss_rate[i]
+        return score
+
+
 # Pearson Correlations Co-efficient Loss
 class PearsonLoss(nn.Module):
     def __init__(self, reduction):
@@ -52,16 +73,16 @@ class WeightedMSELoss(nn.Module):
     [Reference]
     https://www.kaggle.com/competitions/feedback-prize-english-language-learning/discussion/369793
     """
-    def __init__(self, reduction, task_num=6):
+    def __init__(self, reduction, task_num=6) -> None:
         super(WeightedMSELoss, self).__init__()
         self.task_num = task_num
         self.smoothl1loss = nn.SmoothL1Loss(reduction=reduction)
 
-    def forward(self, preds, ans, log_vars) -> float:
+    def forward(self, y_pred, y_true, log_vars) -> float:
         loss = 0
         for i in range(self.task_num):
             precision = torch.exp(-log_vars[i])
-            diff = self.smoothl1loss(preds[:,i],ans[:,i])
+            diff = self.smoothl1loss(y_pred[:, i], y_true[:, i])
             loss += torch.sum(precision * diff + log_vars[i], -1)
         loss = 0.5*loss
         return loss
