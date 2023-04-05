@@ -9,7 +9,7 @@ from optuna.integration.wandb import WeightsAndBiasesCallback
 from torch.optim.swa_utils import update_bn
 from configuration import CFG
 from trainer import FBPTrainer, MPLTrainer
-from trainer_utils import get_name
+from trainer.trainer_utils import get_name
 from utils.helper import class2dict
 
 g = torch.Generator()

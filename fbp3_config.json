@@ -9,7 +9,7 @@
         "dataset": "FBPDataset",
         "model_arch": "FBPModel",
         "backbone": "microsoft/deberta-v3-large",
-        "pooling": "mean"
+        "pooling": "MeanPooling"
     },
     "common_settings": {
         "wandb": true,
@@ -37,9 +37,9 @@
         "loss_fn": "WeightMCRMSELoss",
         "reduction": "mean"
     },
-    "metrics_options": [
-        "f_beta", "recall"
-    ],
+    "metrics_options": {
+        "metrics": ["WeightMCRMSELoss", "f_beta", "recall"]
+    },
     "optimizer_options": {
         "optimizer": "AdamW",
         "llrd": true,

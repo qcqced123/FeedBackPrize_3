@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from trainer.trainer_utils import get_scheduler, get_swa_scheduler
 from dataset_class.text_preprocessing import *
 from utils.helper import *
-from trainer_utils import *
+from trainer.trainer_utils import *
 from model.metric import *
 
 
@@ -159,7 +159,7 @@ class FBPTrainer:
                 labels = labels.to(self.cfg.device)
                 batch_size = labels.size(0)
                 preds = model(inputs)
-                valid_loss = criterion(preds, labels)
+                valid_loss = criterion(pr48eds, labels)
                 valid_losses.update(valid_loss, batch_size)
         valid_loss = valid_losses.avg.detach().cpu().numpy()
         return valid_loss

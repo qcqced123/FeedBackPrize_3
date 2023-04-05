@@ -13,7 +13,7 @@ class CFG:
     model_arch = 'FBPModel'  # model.model.py -> FBPModel, MPLModel
     backbone = 'microsoft/deberta-v3-large'
     tokenizer = AutoTokenizer.from_pretrained(backbone)
-    pooling = 'mean'  # mean, attention, max, weightedlayer, concat, conv1d, lstm
+    pooling = 'MeanPooling'  # mean, attention, max, weightedlayer, concat, conv1d, lstm
 
     """ Common Options """
     wandb = True
