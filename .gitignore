@@ -100,8 +100,8 @@ ENV/
 # mypy
 .mypy_cache/
 
-# input data, saved log, checkpoints
-data/
+# input data_folder, saved log, checkpoints
+dataset_class/data_folder/
 input/
 saved/
 datasets/

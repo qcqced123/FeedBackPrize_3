@@ -39,7 +39,7 @@ def mls_kfold(df: pd.DataFrame, cfg) -> pd.DataFrame:
 
 def load_data(data_path: str) -> pd.DataFrame:
     """
-    Load data from csv file like as train.csv, test.csv, val.csv
+    Load data_folder from csv file like as train.csv, test.csv, val.csv
     """
     df = pd.read_csv(data_path)
     return df
@@ -48,7 +48,7 @@ def load_data(data_path: str) -> pd.DataFrame:
 def text_preprocess(df: pd.DataFrame, cfg) -> pd.DataFrame:
     """
     For FB3 Text Data
-    FB3 Text data has '\n\n', meaning that separate paragraphs are separated by '\n\n'
+    FB3 Text data_folder has '\n\n', meaning that separate paragraphs are separated by '\n\n'
     DeBERTa does not handle '\n\n' well, so we need to change them into token '[PARAGRAPH]'
     """
     text_list = df['full_text'].values.tolist()

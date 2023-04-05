@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 from torch import Tensor
 
@@ -48,7 +47,7 @@ def init_weights(auto_cfg, module) -> None:
         module.weight.data.fill_(1.0)
 
 
-def reinit_topk(model, num_layers: int = 2) -> None:
+def reinit_topk(model, num_layers) -> None:
     """
     Re-initialize the last-k transformer Encoder layers.
     Encoder Layer: Embedding, Attention Head, LayerNorm, Feed Forward
@@ -56,5 +55,5 @@ def reinit_topk(model, num_layers: int = 2) -> None:
         model: The target transformer model.
         num_layers: The number of layers to be re-initialized.
     """
-    model.encoder.layer[-num_layers:].apply(model.init_weights)
+    model.encoder.layer[-num_layers:].apply(model._init_weights)
 

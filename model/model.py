@@ -22,12 +22,12 @@ class FBPModel(nn.Module):
 
         if cfg.reinit:
             init_weights(self.auto_cfg, self.fc)
-            reinit_topk(self.backbone, cfg.num_reinit_layers)
+            reinit_topk(self.backbone, cfg.num_reinit)
 
         if cfg.freeze:
             freeze(self.backbone)
 
-        if cfg.gradient_checkpointing:
+        if cfg.gradient_checkpoint:
             self.backbone.gradient_checkpointing_enable()
 
     def feature(self, inputs: dict):
@@ -63,7 +63,7 @@ class TeacherModel(nn.Module):
 
         if cfg.reinit:
             init_weights(self.auto_cfg, self.fc)
-            reinit_topk(self.backbone, cfg.num_reinit_layers)
+            reinit_topk(self.backbone, cfg.num_reinit)
 
         if cfg.freeze:
             freeze(self.backbone)
@@ -104,7 +104,7 @@ class StudentModel(nn.Module):
 
         if cfg.reinit:
             init_weights(self.auto_cfg, self.fc)
-            reinit_topk(self.backbone, cfg.num_reinit_layers)
+            reinit_topk(self.backbone, cfg.num_reinit)
 
         if cfg.freeze:
             freeze(self.backbone)

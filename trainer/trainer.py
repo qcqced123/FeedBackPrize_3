@@ -1,12 +1,9 @@
 import gc, transformers
 import dataset_class.dataclass as dataset_class
-import dataset_class.text_preprocessing as text_preprocess
 import model.loss as model_loss
 import model.model as model_arch
-from functools import reduce
 from torch.optim.swa_utils import AveragedModel
 from torch.utils.data import DataLoader
-from trainer.trainer_utils import get_scheduler, get_swa_scheduler
 from dataset_class.text_preprocessing import *
 from utils.helper import *
 from trainer.trainer_utils import *
@@ -18,7 +15,7 @@ class FBPTrainer:
         self.cfg = cfg
         self.model_name = self.cfg.backbone.split('/')[1]
         self.generator = generator
-        self.df = load_data('../data/Base_Train/train_df.csv')
+        self.df = load_data('./dataset_class/data_folder/Base_Train/train_df.csv')
         self.tokenizer = self.cfg.tokenizer
         if self.cfg.gradient_checkpoint:
             self.save_parameter = f'(best_score){str(self.model_name)}_state_dict.pth'
@@ -159,7 +156,7 @@ class FBPTrainer:
                 labels = labels.to(self.cfg.device)
                 batch_size = labels.size(0)
                 preds = model(inputs)
-                valid_loss = criterion(pr48eds, labels)
+                valid_loss = criterion(preds, labels)
                 valid_losses.update(valid_loss, batch_size)
         valid_loss = valid_losses.avg.detach().cpu().numpy()
         return valid_loss

@@ -110,13 +110,13 @@ Config files are in `.json` format:
     }                
   },
   "dataset_class": {
-    "type": "MnistDataLoader",         // selecting data loader
+    "type": "MnistDataLoader",         // selecting data_folder loader
     "args":{
-      "data_dir": "data/",             // dataset path
+      "data_dir": "data_folder/",             // dataset path
       "batch_size": 64,                // batch size
-      "shuffle": true,                 // shuffle training data before splitting
+      "shuffle": true,                 // shuffle training data_folder before splitting
       "validation_split": 0.1          // size of validation dataset. float(portion) or int(number of samples)
-      "num_workers": 2,                // number of cpu processes to be used for data loading
+      "num_workers": 2,                // number of cpu processes to be used for data_folder loading
     }
   },
   "optimizer": {
