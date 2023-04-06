@@ -52,7 +52,7 @@ def train_loop(cfg: any) -> None:
             print(f'[{epoch + 1}/{cfg.epochs}] Valid Loss: {np.round(valid_loss, 4)}')
             print(f'[{epoch + 1}/{cfg.epochs}] Gradient Norm: {np.round(grad_norm, 4)}')
             print(f'[{epoch + 1}/{cfg.epochs}] lr: {lr}')
-            if val_score_max <= valid_loss:
+            if val_score_max >= valid_loss:
                 print(f'[Update] Valid Score : ({val_score_max:.4f} => {valid_loss:.4f}) Save Parameter')
                 print(f'Best Score: {valid_loss}')
                 torch.save(model.state_dict(),
@@ -66,7 +66,7 @@ def train_loop(cfg: any) -> None:
         swa_loss = train_input.swa_fn(loader_valid, swa_model, criterion)
         print(f'Fold[{fold}/{fold_list[-1]}] SWA Loss: {np.round(swa_loss, 4)}')
 
-        if val_score_max <= swa_loss:
+        if val_score_max >= swa_loss:
             print(f'[Update] Valid Score : ({val_score_max:.4f} => {swa_loss:.4f}) Save Parameter')
             print(f'Best Score: {swa_loss}')
             torch.save(model.state_dict(),
