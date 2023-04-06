@@ -31,7 +31,7 @@
         "gradient_checkpoint": true,
         "clipping_grad": true,
         "n_gradient_accumulation_steps": 1,
-        "num_grad_norm": 10
+        "max_grad_norm": 1000
     },
     "loss_options": {
         "loss_fn": "WeightMCRMSELoss",
@@ -43,7 +43,7 @@
     "optimizer_options": {
         "optimizer": "AdamW",
         "llrd": true,
-        "layerwise_lr": 5e-6,
+        "layerwise_lr": 3.333e-6,
         "layerwise_lr_decay": 0.9,
         "layerwise_weight_decay": 1e-2,
         "layerwise_adam_epsilon": 1e-6,
@@ -54,7 +54,7 @@
         "scheduler": "cosine_annealing",
         "batch_scheduler": true,
         "num_cycles": 2,
-        "warmup_ratio": 0.1
+        "warmup_ratio": 0.05
     },
     "swa_options": {
         "swa": true,

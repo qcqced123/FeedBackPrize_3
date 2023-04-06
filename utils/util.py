@@ -104,7 +104,7 @@ def sync_config(json_config: json) -> None:
     CFG.amp_scaler = json_config.gradient_settings.amp_scaler
     CFG.gradient_checkpoint = json_config.gradient_settings.gradient_checkpoint
     CFG.clipping_grad = json_config.gradient_settings.clipping_grad
-    CFG.num_grad_norm = json_config.gradient_settings.num_grad_norm
+    CFG.max_grad_norm = json_config.gradient_settings.max_grad_norm
 
     """ Loss Options """
     CFG.loss_fn = json_config.loss_options.loss_fn

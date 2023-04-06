@@ -37,8 +37,7 @@ class CFG:
     gradient_checkpoint = True  # save parameter
     clipping_grad = True  # clip_grad_norm
     n_gradient_accumulation_steps = 1
-    num_grad_norm = 1000
-    max_grad_norm = n_gradient_accumulation_steps * num_grad_norm
+    max_grad_norm = 1000
 
     """ Loss & Metrics Options """
     loss_fn = 'WeightedMSELoss'
