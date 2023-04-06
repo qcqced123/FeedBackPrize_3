@@ -23,7 +23,11 @@
     "data_settings": {
         "n_folds": 5,
         "max_len": 2048,
+<<<<<<< HEAD
+        "epochs": 30,
+=======
         "epochs": 10,
+>>>>>>> 87d75e34fd07487c5ead3946209ca636d304f2a7
         "batch_size": 1
     },
     "gradient_settings": {
