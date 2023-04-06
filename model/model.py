@@ -2,7 +2,7 @@ import torch.nn as nn
 import model.pooling as pooling
 from torch import Tensor
 from transformers import AutoConfig, AutoModel
-from model.model_utils import init_weights, freeze, reinit_topk
+from model.model_utils import freeze, reinit_topk
 
 
 class FBPModel(nn.Module):
