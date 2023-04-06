@@ -121,17 +121,14 @@ class FBPTrainer:
                 scaler.scale(loss).backward()
                 awp._restore()
 
-            if self.cfg.clipping_grad:
+            if self.cfg.clipping_grad and (step + 1) % self.cfg.n_gradient_accumulation_steps == 0 or self.cfg.n_gradient_accumulation_steps == 1:
                 scaler.unscale_(optimizer)
                 grad_norm = torch.nn.utils.clip_grad_norm(
                     model.parameters(),
                     self.cfg.max_grad_norm
                 )
-
-            if (step + 1) % self.cfg.n_gradient_accumulation_steps == 0 or self.cfg.n_gradient_accumulation_steps == 1:
                 scaler.step(optimizer)
                 scaler.update()
-                optimizer.zero_grad()
 
                 if epoch >= int(swa_start):
                     swa_model.update_parameters(model)
@@ -143,7 +140,6 @@ class FBPTrainer:
         grad_norm = grad_norm.detach().cpu().numpy()
         return train_loss, grad_norm, scheduler.get_lr()[0]
 
-    @torch.no_grad()
     def valid_fn(self, loader_valid, model, criterion):
         """ Validation Function """
         valid_losses = AverageMeter()
