@@ -19,9 +19,9 @@ class FBPModel(nn.Module):
         )
         self.fc = nn.Linear(self.auto_cfg.hidden_size, 6)
         self.pooling = getattr(pooling, cfg.pooling)(self.auto_cfg)
+        self._init_weights(self.fc)
 
         if cfg.reinit:
-            init_weights(self.auto_cfg, self.fc)
             reinit_topk(self.backbone, cfg.num_reinit)
 
         if cfg.freeze:
@@ -29,6 +29,21 @@ class FBPModel(nn.Module):
 
         if cfg.gradient_checkpoint:
             self.backbone.gradient_checkpointing_enable()
+
+    def _init_weights(self, module) -> None:
+        """ over-ride initializes weights of the given module function (+initializes LayerNorm) """
+        if isinstance(module, nn.Linear):
+            module.weight.data.normal_(mean=0.0, std=self.auto_cfg.initializer_range)
+            if module.bias is not None:
+                module.bias.data.zero_()
+        elif isinstance(module, nn.Embedding):
+            module.weight.data.normal_(mean=0.0, std=self.auto_cfg.initializer_range)
+            if module.padding_idx is not None:
+                module.weight.data[module.padding_idx].zero_()
+        elif isinstance(module, nn.LayerNorm):
+            """ reference from torch.nn.Layernorm with elementwise_affine=True """
+            module.weight.data.fill_(1.0)
+            module.bias.data.zero_()
 
     def feature(self, inputs: dict):
         outputs = self.backbone(**inputs)
@@ -48,28 +63,44 @@ class TeacherModel(nn.Module):
     """
     Teacher model for Meta Pseudo Label Pipeline
     """
+
     def __init__(self, cfg):
         super().__init__()
         self.auto_cfg = AutoConfig.from_pretrained(
-            cfg.model_name,
+            cfg.backbone,
             output_hidden_states=True
         )
         self.backbone = AutoModel.from_pretrained(
-            cfg.model_name,
+            cfg.backbone,
             config=self.auto_cfg
         )
-        self.fc = nn.Linear(self.auto_cfg.hidden_size, cfg.num_classes)
+        self.fc = nn.Linear(self.auto_cfg.hidden_size, 6)
         self.pooling = getattr(pooling, cfg.pooling)(self.auto_cfg)
+        self._init_weights(self.fc)
 
         if cfg.reinit:
-            init_weights(self.auto_cfg, self.fc)
             reinit_topk(self.backbone, cfg.num_reinit)
 
         if cfg.freeze:
             freeze(self.backbone)
 
-        if cfg.gradient_checkpointing:
+        if cfg.gradient_checkpoint:
             self.backbone.gradient_checkpointing_enable()
+
+    def _init_weights(self, module) -> None:
+        """ over-ride initializes weights of the given module function (+initializes LayerNorm) """
+        if isinstance(module, nn.Linear):
+            module.weight.data.normal_(mean=0.0, std=self.auto_cfg.initializer_range)
+            if module.bias is not None:
+                module.bias.data.zero_()
+        elif isinstance(module, nn.Embedding):
+            module.weight.data.normal_(mean=0.0, std=self.auto_cfg.initializer_range)
+            if module.padding_idx is not None:
+                module.weight.data[module.padding_idx].zero_()
+        elif isinstance(module, nn.LayerNorm):
+            """ reference from torch.nn.Layernorm with elementwise_affine=True """
+            module.weight.data.fill_(1.0)
+            module.bias.data.zero_()
 
     def feature(self, inputs: dict):
         outputs = self.backbone(**inputs)
@@ -89,28 +120,44 @@ class StudentModel(nn.Module):
     """
     Student model for Meta Pseudo Label Pipeline
     """
+
     def __init__(self, cfg):
         super().__init__()
         self.auto_cfg = AutoConfig.from_pretrained(
-            cfg.model_name,
+            cfg.backbone,
             output_hidden_states=True
         )
         self.backbone = AutoModel.from_pretrained(
-            cfg.model_name,
+            cfg.backbone,
             config=self.auto_cfg
         )
-        self.fc = nn.Linear(self.auto_cfg.hidden_size, cfg.num_classes)
+        self.fc = nn.Linear(self.auto_cfg.hidden_size, 6)
         self.pooling = getattr(pooling, cfg.pooling)(self.auto_cfg)
+        self._init_weights(self.fc)
 
         if cfg.reinit:
-            init_weights(self.auto_cfg, self.fc)
             reinit_topk(self.backbone, cfg.num_reinit)
 
         if cfg.freeze:
             freeze(self.backbone)
 
-        if cfg.gradient_checkpointing:
+        if cfg.gradient_checkpoint:
             self.backbone.gradient_checkpointing_enable()
+
+    def _init_weights(self, module) -> None:
+        """ over-ride initializes weights of the given module function (+initializes LayerNorm) """
+        if isinstance(module, nn.Linear):
+            module.weight.data.normal_(mean=0.0, std=self.auto_cfg.initializer_range)
+            if module.bias is not None:
+                module.bias.data.zero_()
+        elif isinstance(module, nn.Embedding):
+            module.weight.data.normal_(mean=0.0, std=self.auto_cfg.initializer_range)
+            if module.padding_idx is not None:
+                module.weight.data[module.padding_idx].zero_()
+        elif isinstance(module, nn.LayerNorm):
+            """ reference from torch.nn.Layernorm with elementwise_affine=True """
+            module.weight.data.fill_(1.0)
+            module.bias.data.zero_()
 
     def feature(self, inputs: dict):
         outputs = self.backbone(**inputs)
