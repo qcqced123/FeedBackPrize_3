@@ -24,7 +24,7 @@
         "n_folds": 5,
         "max_len": 1468,
         "epochs": 5,
-        "batch_size": 32
+        "batch_size": 64
     },
     "gradient_settings": {
         "amp_scaler": true,

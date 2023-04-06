@@ -145,7 +145,7 @@ class FBPTrainer:
         valid_losses = AverageMeter()
         model.eval()
         with torch.no_grad():
-            for step, (inputs, target_masks, labels) in enumerate(tqdm(loader_valid)):
+            for step, (inputs, labels) in enumerate(tqdm(loader_valid)):
                 inputs = collate(inputs)
                 for k, v in inputs.items():
                     inputs[k] = v.to(self.cfg.device)
@@ -164,7 +164,7 @@ class FBPTrainer:
         swa_valid_losses = AverageMeter()
 
         with torch.no_grad():
-            for step, (swa_inputs, target_masks, swa_labels) in enumerate(tqdm(loader_valid)):
+            for step, (swa_inputs, swa_labels) in enumerate(tqdm(loader_valid)):
                 swa_inputs = collate(swa_inputs)
 
                 for k, v in swa_inputs.items():
