@@ -1,1 +1,1 @@
-{"<epoch> Train Loss": 0.410422682762146, "<epoch> Valid Loss": 0.4650794565677643, "<epoch> Gradient Norm": 16038.6376953125, "<epoch> lr": 3.322885473750363e-06, "_timestamp": 1680768818.3374982, "_runtime": 1164.616452217102, "_step": 1}
+{"<epoch> Train Loss": 0.40044015645980835, "<epoch> Valid Loss": 0.5366957783699036, "<epoch> Gradient Norm": 14126.2490234375, "<epoch> lr": 3.2427044332941074e-06, "_timestamp": 1680769394.5520484, "_runtime": 1740.8310024738312, "_step": 2, "_wandb": {"runtime": 1764}}
