@@ -22,9 +22,9 @@ def train_loop(cfg: any) -> None:
     for fold in tqdm(fold_list):
         print(f'============== {fold}th Fold Train & Validation ==============')
         wandb.init(project=cfg.name,
-                   name=f'[{cfg.model_arch}]' + f'fold{fold}/' + cfg.backbone,
+                   name=f'[{cfg.model_arch}]' + f'fold{fold}/' + cfg.model,
                    config=class2dict(cfg),
-                   group=cfg.backbone,
+                   group=cfg.model,
                    job_type='train',
                    entity="qcqced")
         val_score_max, fold_swa_loss = -np.inf, []

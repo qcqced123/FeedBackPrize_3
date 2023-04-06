@@ -82,7 +82,7 @@ def sync_config(json_config: json) -> None:
     CFG.name = json_config.pipeline_setting.name
     CFG.dataset = json_config.pipeline_setting.dataset
     CFG.model_arch = json_config.pipeline_setting.model_arch
-    CFG.backbone = json_config.pipeline_setting.backbone
+    CFG.model = json_config.pipeline_setting.model
     CFG.pooling = json_config.pipeline_setting.pooling
 
     """ Common Options """

@@ -13,7 +13,7 @@ from model.metric import *
 class FBPTrainer:
     def __init__(self, cfg, generator):
         self.cfg = cfg
-        self.model_name = self.cfg.backbone.split('/')[1]
+        self.model_name = self.cfg.model.split('/')[1]
         self.generator = generator
         self.df = load_data('./dataset_class/data_folder/Base_Train/train_df.csv')
         self.tokenizer = self.cfg.tokenizer
@@ -67,7 +67,7 @@ class FBPTrainer:
             self.cfg.layerwise_lr_decay
         )
         optimizer = getattr(transformers, self.cfg.optimizer)(
-            grouped_optimizer_params,
+            params=grouped_optimizer_params,
             lr=self.cfg.layerwise_lr,
             eps=self.cfg.layerwise_adam_epsilon,
             correct_bias=not self.cfg.layerwise_use_bertadam

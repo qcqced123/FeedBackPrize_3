@@ -12,7 +12,7 @@ def get_optimizer_grouped_parameters(model, layerwise_lr, layerwise_weight_decay
                                      "lr": layerwise_lr,
                                      }, ]
     # initialize lrs for every layer
-    layers = [model.embeddings] + list(model.encoder.layer)
+    layers = [model.model.embeddings] + list(model.model.encoder.layer)
     layers.reverse()
     lr = layerwise_lr
     for layer in layers:
@@ -80,9 +80,9 @@ def get_scheduler(cfg, optimizer, len_train: int):
 def get_name(cfg) -> str:
     """ get name of model """
     try:
-        name = cfg.backbone.replace('/', '-')
+        name = cfg.model.replace('/', '-')
     except ValueError:
-        name = cfg.backbone
+        name = cfg.model
     return name
 
 
