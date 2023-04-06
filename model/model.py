@@ -10,11 +10,11 @@ class FBPModel(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.auto_cfg = AutoConfig.from_pretrained(
-            cfg.backbone,
+            cfg.model,
             output_hidden_states=True
         )
-        self.backbone = AutoModel.from_pretrained(
-            cfg.backbone,
+        self.model = AutoModel.from_pretrained(
+            cfg.model,
             config=self.auto_cfg
         )
         self.fc = nn.Linear(self.auto_cfg.hidden_size, 6)
@@ -22,13 +22,13 @@ class FBPModel(nn.Module):
         self._init_weights(self.fc)
 
         if cfg.reinit:
-            reinit_topk(self.backbone, cfg.num_reinit)
+            reinit_topk(self.model, cfg.num_reinit)
 
         if cfg.freeze:
-            freeze(self.backbone)
+            freeze(self.model)
 
         if cfg.gradient_checkpoint:
-            self.backbone.gradient_checkpointing_enable()
+            self.model.gradient_checkpointing_enable()
 
     def _init_weights(self, module) -> None:
         """ over-ride initializes weights of the given module function (+initializes LayerNorm) """
@@ -46,11 +46,11 @@ class FBPModel(nn.Module):
             module.bias.data.zero_()
 
     def feature(self, inputs: dict):
-        outputs = self.backbone(**inputs)
+        outputs = self.model(**inputs)
         return outputs
 
     def forward(self, inputs: dict) -> list[Tensor]:
-        outputs = self.feature(**inputs)
+        outputs = self.feature(inputs)
         embedding = self.pooling(
             outputs.last_hidden_state,
             inputs['attention_mask']
@@ -67,11 +67,11 @@ class TeacherModel(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.auto_cfg = AutoConfig.from_pretrained(
-            cfg.backbone,
+            cfg.model,
             output_hidden_states=True
         )
-        self.backbone = AutoModel.from_pretrained(
-            cfg.backbone,
+        self.model = AutoModel.from_pretrained(
+            cfg.model,
             config=self.auto_cfg
         )
         self.fc = nn.Linear(self.auto_cfg.hidden_size, 6)
@@ -79,13 +79,13 @@ class TeacherModel(nn.Module):
         self._init_weights(self.fc)
 
         if cfg.reinit:
-            reinit_topk(self.backbone, cfg.num_reinit)
+            reinit_topk(self.model, cfg.num_reinit)
 
         if cfg.freeze:
-            freeze(self.backbone)
+            freeze(self.model)
 
         if cfg.gradient_checkpoint:
-            self.backbone.gradient_checkpointing_enable()
+            self.model.gradient_checkpointing_enable()
 
     def _init_weights(self, module) -> None:
         """ over-ride initializes weights of the given module function (+initializes LayerNorm) """
@@ -103,7 +103,7 @@ class TeacherModel(nn.Module):
             module.bias.data.zero_()
 
     def feature(self, inputs: dict):
-        outputs = self.backbone(**inputs)
+        outputs = self.model(**inputs)
         return outputs
 
     def forward(self, inputs: dict) -> list[Tensor]:
@@ -124,11 +124,11 @@ class StudentModel(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.auto_cfg = AutoConfig.from_pretrained(
-            cfg.backbone,
+            cfg.model,
             output_hidden_states=True
         )
-        self.backbone = AutoModel.from_pretrained(
-            cfg.backbone,
+        self.model = AutoModel.from_pretrained(
+            cfg.model,
             config=self.auto_cfg
         )
         self.fc = nn.Linear(self.auto_cfg.hidden_size, 6)
@@ -136,13 +136,13 @@ class StudentModel(nn.Module):
         self._init_weights(self.fc)
 
         if cfg.reinit:
-            reinit_topk(self.backbone, cfg.num_reinit)
+            reinit_topk(self.model, cfg.num_reinit)
 
         if cfg.freeze:
-            freeze(self.backbone)
+            freeze(self.model)
 
         if cfg.gradient_checkpoint:
-            self.backbone.gradient_checkpointing_enable()
+            self.model.gradient_checkpointing_enable()
 
     def _init_weights(self, module) -> None:
         """ over-ride initializes weights of the given module function (+initializes LayerNorm) """
@@ -160,7 +160,7 @@ class StudentModel(nn.Module):
             module.bias.data.zero_()
 
     def feature(self, inputs: dict):
-        outputs = self.backbone(**inputs)
+        outputs = self.model(**inputs)
         return outputs
 
     def forward(self, inputs: dict) -> list[Tensor]:

@@ -8,7 +8,7 @@
         "name": "FBPTrainer",
         "dataset": "FBPDataset",
         "model_arch": "FBPModel",
-        "backbone": "microsoft/deberta-v3-large",
+        "model": "microsoft/deberta-v3-large",
         "pooling": "MeanPooling"
     },
     "common_settings": {
