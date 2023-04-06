@@ -18,7 +18,7 @@ g.manual_seed(CFG.seed)
 
 def train_loop(cfg: any) -> None:
     """ Base Trainer Loop Function """
-    fold_list, swa_score_max = [i for i in range(cfg.n_folds)], -np.inf
+    fold_list = [i for i in range(cfg.n_folds)]
     for fold in tqdm(fold_list):
         print(f'============== {fold}th Fold Train & Validation ==============')
         wandb.init(project=cfg.name,
@@ -27,7 +27,7 @@ def train_loop(cfg: any) -> None:
                    group=cfg.model,
                    job_type='train',
                    entity="qcqced")
-        val_score_max, fold_swa_loss = -np.inf, []
+        val_score_max, fold_swa_loss = np.inf, []
         train_input = FBPTrainer(cfg, g)  # init object
         loader_train, loader_valid, train = train_input.make_batch(fold)
         model, swa_model, criterion, optimizer,\
