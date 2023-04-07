@@ -22,16 +22,16 @@
     },
     "data_settings": {
         "n_folds": 5,
-        "max_len": 2048,
+        "max_len": 1024,
         "epochs": 30,
-        "batch_size": 1
+        "batch_size": 16
     },
     "gradient_settings": {
         "amp_scaler": true,
         "gradient_checkpoint": true,
         "clipping_grad": true,
         "n_gradient_accumulation_steps": 1,
-        "max_grad_norm": 1000
+        "max_grad_norm": 10
     },
     "loss_options": {
         "loss_fn": "WeightMCRMSELoss",
