@@ -1,7 +1,7 @@
 import re
 import torch
 import transformers
-
+from dataclasses import dataclass
 
 def get_optimizer_grouped_parameters(model, layerwise_lr, layerwise_weight_decay, layerwise_lr_decay):
     """ Grouped Version: Layer-wise learning rate decay """
@@ -169,3 +169,24 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+
+@dataclass
+class EarlyStopping:
+    def __init__(self, patience: int, mode='min', min_delta=0):
+        """ EarlyStopping handler can be used to stop the training if no improvement after a given number of events.
+
+        Args:
+            patience: Number of events to wait if no improvement and then stop the training.
+            mode: Choose EarlyStopping Standard which is depend on your metric,  default = 'min'
+            min_delta: A minimum increase in the score to qualify as an improvement,
+                i.e. an increase of less than or equal to `min_delta`, will count as no improvement.
+            cumulative_delta: It True, `min_delta` defines an increase since the last `patience` reset, otherwise,
+                it defines an increase after the last event. Default value is False.
+
+        [Reference]
+        1) https://pytorch.org/ignite/_modules/ignite/handlers/early_stopping.html#EarlyStopping
+        2) https://teddylee777.github.io/pytorch/early-stopping/
+        """
+        patience = patience
+        min_delta: float = abs(min_delta)

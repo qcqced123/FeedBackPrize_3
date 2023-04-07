@@ -25,8 +25,8 @@ class FBPTrainer:
         valid = self.df[self.df['fold'] == fold].reset_index(drop=True)
 
         # Custom Datasets
-        train_dataset = getattr(dataset_class, self.cfg.dataset)(self.tokenizer, train)
-        valid_dataset = getattr(dataset_class, self.cfg.dataset)(self.tokenizer, valid)
+        train_dataset = getattr(dataset_class, self.cfg.dataset)(self.cfg, self.tokenizer, train)
+        valid_dataset = getattr(dataset_class, self.cfg.dataset)(self.cfg, self.tokenizer, valid)
 
         # DataLoader
         loader_train = DataLoader(
@@ -157,7 +157,6 @@ class FBPTrainer:
         valid_loss = valid_losses.avg.detach().cpu().numpy()
         return valid_loss
 
-    @torch.no_grad()
     def swa_fn(self, loader_valid, swa_model, criterion):
         """ Validation Function by Stochastic Weight Averaging """
         swa_model.eval()

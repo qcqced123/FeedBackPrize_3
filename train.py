@@ -1,4 +1,3 @@
-import torch
 import argparse, collections
 from omegaconf import OmegaConf
 
