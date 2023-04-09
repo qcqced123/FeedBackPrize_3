@@ -90,7 +90,7 @@ def mpl_loop(cfg: any) -> None:
         s_optimizer, t_scheduler, s_scheduler, save_parameter = train_input.model_setting(
             len(s_train), len(p_train)
         )
-    s_valid_loss = torch.Tensor(0).to(cfg.device)
+    s_valid_loss = torch.Tensor([0]).to(cfg.device)
     for epoch in range(cfg.epochs):
         print(f'[{epoch + 1}/{cfg.epochs}] Train & Validation')
         t_train_loss, s_train_loss, t_lr, s_lr = train_input.train_fn(

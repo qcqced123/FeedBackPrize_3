@@ -6,6 +6,7 @@
         "resume": false,
         "state_dict": "/",
         "name": "MPLTrainer",
+        "loop": "mpl_loop",
         "dataset": "MPLDataset",
         "model_arch": "MPLModel",
         "model": "microsoft/deberta-v3-large",
@@ -23,11 +24,11 @@
     "data_settings": {
         "n_folds": 5,
         "max_len": 1024,
-        "epochs": 30,
+        "epochs": 5,
         "batch_size": 16
     },
     "gradient_settings": {
-        "amp_scaler": true,
+        "amp_scaler": false,
         "gradient_checkpoint": true,
         "clipping_grad": true,
         "n_gradient_accumulation_steps": 1,
@@ -43,7 +44,7 @@
     "optimizer_options": {
         "optimizer": "AdamW",
         "llrd": true,
-        "layerwise_lr": 3.333e-6,
+        "layerwise_lr": 5e-6,
         "layerwise_lr_decay": 0.9,
         "layerwise_weight_decay": 1e-2,
         "layerwise_adam_epsilon": 1e-6,
@@ -53,8 +54,8 @@
     "scheduler_options": {
         "scheduler": "cosine_annealing",
         "batch_scheduler": true,
-        "num_cycles": 2,
-        "warmup_ratio": 0.05
+        "num_cycles": 1,
+        "warmup_ratio": 0.1
     },
     "swa_options": {
         "swa": true,

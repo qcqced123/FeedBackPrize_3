@@ -9,6 +9,7 @@ class CFG:
     checkpoint_dir = './saved/model'
     resume, state_dict = False, '/'
     name = 'FBP3_Base_Train_Pipeline'
+    loop = 'mpl_loop'
     dataset = 'FBPDataset'  # dataset_class.dataclass.py -> FBPDataset, MPLDataset
     model_arch = 'FBPModel'  # model.model.py -> FBPModel, MPLModel
     model = 'microsoft/deberta-v3-large'
@@ -22,7 +23,7 @@ class CFG:
     seed = 42
     cfg_name = 'CFG'
     n_gpu = 1
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     gpu_id = 0
     num_workers = 0
 

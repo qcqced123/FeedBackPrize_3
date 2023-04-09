@@ -3,7 +3,7 @@ from omegaconf import OmegaConf
 
 from configuration import CFG
 from parse_config import ConfigParser
-from trainer.train_loop import *
+import trainer.train_loop as train_loop
 from utils.helper import check_library, all_type_seed
 from utils import sync_config
 
@@ -16,7 +16,7 @@ def main(config_path: str, cfg) -> None:
     sync_config(OmegaConf.load(config_path))  # load json config
     # cfg = OmegaConf.structured(CFG)
     # OmegaConf.merge(cfg)  # merge with cli_options
-    train_loop(cfg)
+    getattr(train_loop, cfg.loop)(cfg)  # init object
 
 
 if __name__ == '__main__':

@@ -60,10 +60,7 @@ class FBPModel(nn.Module):
 
 
 class MPLModel(nn.Module):
-    """
-    Teacher model for Meta Pseudo Label Pipeline
-    """
-
+    """ Teacher model for Meta Pseudo Label Pipeline """
     def __init__(self, cfg):
         super().__init__()
         self.auto_cfg = AutoConfig.from_pretrained(
@@ -107,7 +104,7 @@ class MPLModel(nn.Module):
         return outputs
 
     def forward(self, inputs: dict) -> list[Tensor]:
-        outputs = self.feature(**inputs)
+        outputs = self.feature(inputs)
         embedding = self.pooling(
             outputs.last_hidden_state,
             inputs['attention_mask']

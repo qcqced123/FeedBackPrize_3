@@ -80,6 +80,7 @@ def sync_config(json_config: json) -> None:
     CFG.checkpoint_dir = json_config.pipeline_setting.checkpoint_dir
     CFG.resume, CFG.state_dict = json_config.pipeline_setting.resume, json_config.pipeline_setting.state_dict
     CFG.name = json_config.pipeline_setting.name
+    CFG.loop = json_config.pipeline_setting.loop
     CFG.dataset = json_config.pipeline_setting.dataset
     CFG.model_arch = json_config.pipeline_setting.model_arch
     CFG.model = json_config.pipeline_setting.model

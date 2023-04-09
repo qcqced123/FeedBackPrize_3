@@ -215,7 +215,7 @@ class MPLTrainer:
         s_train, p_train = self.supervised_df.reset_index(drop=True), self.pseudo_df.reset_index(drop=True)
         p_valid = self.supervised_df.reset_index(drop=True)
 
-        s_train_dataset = getattr(dataset_class, self.cfg.dataset)(self.cfg, self.tokenizer, s_train)
+        s_train_dataset = dataset_class.FBPDataset(self.cfg, self.tokenizer, s_train)
         p_train_dataset = dataset_class.MPLDataset(self.cfg, self.tokenizer, p_train)
         p_valid_dataset = getattr(dataset_class, self.cfg.dataset)(self.cfg, self.tokenizer, p_valid)
 
@@ -259,10 +259,15 @@ class MPLTrainer:
         """ For Meta Pseudo Label """
         t_model = getattr(model_arch, self.cfg.model_arch)(self.cfg)
         s_model = getattr(model_arch, self.cfg.model_arch)(self.cfg)
-        t_model.load_state_dict(torch.load(self.cfg.checkpoint_dir + self.cfg.state_dict))
+        # t_model.load_state_dict(torch.load(self.cfg.checkpoint_dir + self.cfg.state_dict))
         if self.cfg.resume:
-            s_model.load_state_dict(torch.load(self.cfg.checkpoint_dir + self.cfg.state_dict))
-
+            s_model.load_state_dict(
+                torch.load(
+                self.cfg.checkpoint_dir + self.cfg.state_dict + 'microsoft-deberta-v3-large_fold0_best.pth',
+                map_location=self.cfg.device
+                ),
+                strict=False
+            )
         t_model.to(self.cfg.device)
         s_model.to(self.cfg.device)
 
@@ -315,8 +320,7 @@ class MPLTrainer:
 
         but, I use only supervised task loss + meta pseudo label loss for teacher loss
         """
-        scaler = torch.cuda.amp.GradScaler(enabled=True)
-        global_step, score_list = 0, []  # All Fold's average of mean F2-Score
+        t_scaler, s_scaler = torch.cuda.amp.GradScaler(enabled=True), torch.cuda.amp.GradScaler(enabled=True)
         t_losses, s_losses = AverageMeter(), AverageMeter()
         t_model.train(), s_model.train()
 
@@ -328,31 +332,29 @@ class MPLTrainer:
                 inputs[k] = v.to(self.cfg.device)  # train to gpu
             labels = labels.to(self.cfg.device)  # label to gpu
             batch_size = labels.size(0)
-
-            with torch.cuda.amp.autocast(enabled=self.cfg.amp_scaler):
+            with torch.cuda.amp.autocast(enabled=True):
                 preds = t_model(inputs)
                 t_loss = criterion(preds, labels)
                 new_t_loss = t_loss + s_valid_loss  # final teacher loss, later will add unsupervised loss
                 t_losses.update(new_t_loss, batch_size) # teacher & student model's batch must be same
-
             if self.cfg.n_gradient_accumulation_steps > 1:
                 new_t_loss = new_t_loss / self.cfg.n_gradient_accumulation_steps
 
-            scaler.scale(new_t_loss).backward()
+            t_scaler.scale(new_t_loss).backward()
+
             if self.cfg.clipping_grad and (step + 1) % self.cfg.n_gradient_accumulation_steps == 0 or self.cfg.n_gradient_accumulation_steps == 1:
-                scaler.unscale_(t_optimizer)
+                t_scaler.unscale_(t_optimizer)
                 torch.nn.utils.clip_grad_norm(
                     t_model.parameters(),
                     self.cfg.max_grad_norm * self.cfg.n_gradient_accumulation_steps
                 )
-                scaler.step(t_optimizer)
-                scaler.update()
-                global_step += 1
+                t_scaler.step(t_optimizer)
+                t_scaler.update()
                 t_scheduler.step()
         t_train_loss = t_losses.avg.detach().cpu().numpy()  # supervised loss + student model's validation loss
-
+        print(t_train_loss)
         """ Pseudo Label Training: make student model's validation loss """
-        for step, inputs in enumerate(tqdm(p_loader_train)):
+        for p_step, inputs in enumerate(tqdm(p_loader_train)):
             s_optimizer.zero_grad()
             inputs = collate(inputs)
             for k, v in inputs.items():
@@ -363,26 +365,23 @@ class MPLTrainer:
             pseudo_label = postprocess(pseudo_label.detach().cpu().squeeze())  # postprocess
             batch_size = pseudo_label.size(0)
             pseudo_label = pseudo_label.to(self.cfg.device)  # pseudo label to gpu
-
-            with torch.cuda.amp.autocast(enabled=self.cfg.amp_scaler):
+            with torch.cuda.amp.autocast(enabled=True):
                 preds = s_model(inputs)
                 s_loss = criterion(preds, pseudo_label)
                 s_losses.update(s_loss, batch_size)
-
             if self.cfg.n_gradient_accumulation_steps > 1:
                 s_loss = s_loss / self.cfg.n_gradient_accumulation_steps
 
-            scaler.scale(s_loss).backward()
+            s_scaler.scale(s_loss).backward()
 
-            if self.cfg.clipping_grad and (step + 1) % self.cfg.n_gradient_accumulation_steps == 0 or self.cfg.n_gradient_accumulation_steps == 1:
-                scaler.unscale_(t_optimizer)
+            if self.cfg.clipping_grad and (p_step + 1) % self.cfg.n_gradient_accumulation_steps == 0 or self.cfg.n_gradient_accumulation_steps == 1:
+                s_scaler.unscale_(s_optimizer)
                 torch.nn.utils.clip_grad_norm(
                     s_model.parameters(),
                     self.cfg.max_grad_norm * self.cfg.n_gradient_accumulation_steps
                 )
-                scaler.step(s_optimizer)
-                scaler.update()
-                global_step += 1
+                s_scaler.step(s_optimizer)
+                s_scaler.update()
                 s_scheduler.step()
 
         s_train_loss = s_losses.avg.detach().cpu().numpy()
