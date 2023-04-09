@@ -1,7 +1,9 @@
 import re
 import torch
 import transformers
+from torch import Tensor
 from dataclasses import dataclass
+
 
 def get_optimizer_grouped_parameters(model, layerwise_lr, layerwise_weight_decay, layerwise_lr_decay):
     """ Grouped Version: Layer-wise learning rate decay """
@@ -171,7 +173,15 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-@dataclass
+def postprocess(pseudo_label):
+    """ for post processing to teacher model's prediction(pseudo label) """
+    label_dict = torch.arange(1, 5.5, 0.5)
+    pseudo_label.squeeze()
+    for instance in pseudo_label:
+        for idx in range(len(instance)):
+            instance[idx] = label_dict[(torch.abs(label_dict - instance[idx]) == min(torch.abs(label_dict - instance[idx]))).nonzero(as_tuple=False)]
+    return pseudo_label
+
 class EarlyStopping:
     def __init__(self, patience: int, mode='min', min_delta=0):
         """ EarlyStopping handler can be used to stop the training if no improvement after a given number of events.
@@ -188,5 +198,11 @@ class EarlyStopping:
         1) https://pytorch.org/ignite/_modules/ignite/handlers/early_stopping.html#EarlyStopping
         2) https://teddylee777.github.io/pytorch/early-stopping/
         """
-        patience = patience
-        min_delta: float = abs(min_delta)
+        def __init__():
+            super().__init__()
+            self.patience = patience
+            self.mode = mode
+            self.min_delta = min_delta
+
+        def __call__():
+            return

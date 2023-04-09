@@ -8,7 +8,7 @@ from optuna.integration.wandb import WeightsAndBiasesCallback
 
 from torch.optim.swa_utils import update_bn
 from configuration import CFG
-from trainer import FBPTrainer, MPLTrainer
+from trainer import *
 from trainer.trainer_utils import get_name
 from utils.helper import class2dict
 
@@ -28,10 +28,10 @@ def train_loop(cfg: any) -> None:
                    job_type='train',
                    entity="qcqced")
         val_score_max, fold_swa_loss = np.inf, []
-        train_input = FBPTrainer(cfg, g)  # init object
-        loader_train, loader_valid, train = train_input.make_batch(fold)
+        train_input = getattr(trainer, cfg.name)(cfg, g)  # init object
+        loader_train, loader_valid, train = train_input.make_batch()
         model, swa_model, criterion, optimizer,\
-            lr_scheduler, swa_scheduler, awp, save_parameter = train_input.model_setting(len(train))
+            lr_scheduler, swa_scheduler, awp,save_parameter = train_input.model_setting(len(train))
 
         for epoch in range(cfg.epochs):
             print(f'[{epoch + 1}/{cfg.epochs}] Train & Validation')
@@ -71,6 +71,57 @@ def train_loop(cfg: any) -> None:
             print(f'Best Score: {swa_loss}')
             torch.save(model.state_dict(),
                        f'{cfg.checkpoint_dir}{cfg.state_dict}SWA_fold{fold}_{get_name(cfg)}_state_dict.pth')
+
+    wandb.finish()
+
+
+def mpl_loop(cfg: any) -> None:
+    """ MPL Trainer Loop Function """
+    wandb.init(project=cfg.name,
+               name=f'[{cfg.model_arch}]' + '/Meta Pseudo Label/' + cfg.model,
+               config=class2dict(cfg),
+               group=cfg.model,
+               job_type='train',
+               entity="qcqced")
+    val_score_max = np.inf
+    train_input = getattr(trainer, cfg.name)(cfg, g)  # init object
+    s_loader_train, s_train, p_loader_train, p_loader_valid, p_train = train_input.make_batch()
+    t_model, s_model, criterion, t_optimizer, \
+        s_optimizer, t_scheduler, s_scheduler, save_parameter = train_input.model_setting(
+            len(s_train), len(p_train)
+        )
+    s_valid_loss = torch.Tensor(0).to(cfg.device)
+    for epoch in range(cfg.epochs):
+        print(f'[{epoch + 1}/{cfg.epochs}] Train & Validation')
+        t_train_loss, s_train_loss, t_lr, s_lr = train_input.train_fn(
+            t_model, s_model, criterion, t_optimizer, s_optimizer, t_scheduler, s_scheduler,
+            s_loader_train, p_loader_train, s_valid_loss
+        )
+        s_valid_loss, s_valid_losses = train_input.valid_fn(
+            p_loader_valid, s_model, criterion
+        )
+        wandb.log({
+            '<epoch> Teacher Train Loss': t_train_loss,
+            '<epoch> Student Train Loss': s_train_loss,
+            '<epoch> Student Validation Loss': s_valid_losses,
+            '<epoch> Teacher lr': t_lr,
+            '<epoch> Student lr': s_lr,
+        })
+        print(f'[{epoch + 1}/{cfg.epochs}] Teacher Train Loss: {np.round(t_train_loss, 4)}')
+        print(f'[{epoch + 1}/{cfg.epochs}] Student Train Loss: {np.round(s_train_loss, 4)}')
+        print(f'[{epoch + 1}/{cfg.epochs}] Student Validation Loss: {np.round(s_valid_losses, 4)}')
+
+        if val_score_max >= s_valid_losses:
+            print(f'[Update] Valid Score : ({val_score_max:.4f} => {s_valid_losses:.4f}) Save Parameter')
+            print(f'Best Score: {s_valid_losses}')
+            torch.save(t_model.state_dict(),
+                       f'{cfg.checkpoint_dir}{cfg.state_dict}MPL_Teacher_{get_name(cfg)}_state_dict.pth')
+            torch.save(s_model.state_dict(),
+                       f'{cfg.checkpoint_dir}{cfg.state_dict}MPL_Student_{get_name(cfg)}_state_dict.pth')
+            val_score_max = s_valid_losses
+
+        del t_train_loss, s_train_loss, s_valid_losses, t_lr, s_lr
+        gc.collect(), torch.cuda.empty_cache()
 
     wandb.finish()
 

@@ -5,9 +5,9 @@
         "checkpoint_dir": "./saved/model",
         "resume": false,
         "state_dict": "/",
-        "name": "FBPTrainer",
-        "dataset": "FBPDataset",
-        "model_arch": "FBPModel",
+        "name": "MPLTrainer",
+        "dataset": "MPLDataset",
+        "model_arch": "MPLModel",
         "model": "microsoft/deberta-v3-large",
         "pooling": "MeanPooling"
     },
@@ -15,7 +15,7 @@
         "wandb": true,
         "optuna": false,
         "competition": "FBP3",
-        "seed": 42, 
+        "seed": 42,
         "n_gpu": 1,
         "gpu_id": 0,
         "num_workers": 0

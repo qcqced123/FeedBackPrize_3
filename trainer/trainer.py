@@ -1,4 +1,5 @@
 import gc, transformers
+import torch
 import dataset_class.dataclass as dataset_class
 import model.loss as model_loss
 import model.model as model_arch
@@ -178,13 +179,228 @@ class FBPTrainer:
         return swa_loss
 
 
-class MPLTrainer():
-    def __init__(self, model, criterion, metric_ftns, optimizer, config, device,
-                 data_loader, valid_data_loader=None, lr_scheduler=None, len_epoch=None):
-        super().__init__(model, criterion, metric_ftns, optimizer, config)
+class MPLTrainer:
+    """
+    Trainer Class for Meta Pseudo Label Pipeline
 
-    def train_fn(self):
-        return
+    Args:
+        cfg: config settings from configuration.py
+        generator: generator for meta pseudo label
 
-    def swa_fn(self):
-        return
+    Teacher Model
+        train/validation: Supervised Data => use FBPDataset class, need to split for validation
+        inference: Unsupervised Data for make pseudo labels => 구현 필요
+        loss: supervised loss + student validation loss
+
+    Student Model
+        train: Unsupervised Data with pseudo labels => 구현 필요
+        validation: Supervised Data => use FBPDataset class, no split for validation
+        loss:
+
+    1) Label Update with end of each training steps
+    2) Pseudo Labeling for Regression Task
+    """
+    def __init__(self, cfg, generator):
+        self.cfg = cfg
+        self.model_name = self.cfg.model.split('/')[1]
+        self.generator = generator
+        self.supervised_df = load_data('./dataset_class/data_folder/Base_Train/train_df.csv')
+        self.pseudo_df = load_data('./dataset_class/data_folder/MPL/train_df.csv')
+        self.tokenizer = self.cfg.tokenizer
+        if self.cfg.gradient_checkpoint:
+            self.save_parameter = f'(best_score){str(self.model_name)}_state_dict.pth'
+
+    def make_batch(self):
+        """ For Supervised Learning & Meta Pseudo Label Learning """
+        s_train, p_train = self.supervised_df.reset_index(drop=True), self.pseudo_df.reset_index(drop=True)
+        p_valid = self.supervised_df.reset_index(drop=True)
+
+        s_train_dataset = getattr(dataset_class, self.cfg.dataset)(self.cfg, self.tokenizer, s_train)
+        p_train_dataset = dataset_class.MPLDataset(self.cfg, self.tokenizer, p_train)
+        p_valid_dataset = getattr(dataset_class, self.cfg.dataset)(self.cfg, self.tokenizer, p_valid)
+
+        # Teacher's DataLoader
+        s_loader_train = DataLoader(
+            s_train_dataset,
+            batch_size=self.cfg.batch_size,
+            shuffle=True,
+            worker_init_fn=seed_worker,
+            generator=self.generator,
+            num_workers=self.cfg.num_workers,
+            pin_memory=True,
+            drop_last=True,
+        )
+
+        # Student's DataLoader
+        p_loader_train = DataLoader(
+            p_train_dataset,
+            batch_size=self.cfg.batch_size,
+            shuffle=True,
+            worker_init_fn=seed_worker,
+            generator=self.generator,
+            num_workers=self.cfg.num_workers,
+            pin_memory=True,
+            drop_last=True,
+        )
+
+        p_loader_valid = DataLoader(
+            p_valid_dataset,
+            batch_size=self.cfg.batch_size,
+            shuffle=False,
+            worker_init_fn=seed_worker,
+            generator=self.generator,
+            num_workers=self.cfg.num_workers,
+            pin_memory=True,
+            drop_last=False,
+        )
+        return s_loader_train, s_train, p_loader_train, p_loader_valid, p_train
+
+    def model_setting(self, len_t_train: int, len_s_train: int):
+        """ For Meta Pseudo Label """
+        t_model = getattr(model_arch, self.cfg.model_arch)(self.cfg)
+        s_model = getattr(model_arch, self.cfg.model_arch)(self.cfg)
+        t_model.load_state_dict(torch.load(self.cfg.checkpoint_dir + self.cfg.state_dict))
+        if self.cfg.resume:
+            s_model.load_state_dict(torch.load(self.cfg.checkpoint_dir + self.cfg.state_dict))
+
+        t_model.to(self.cfg.device)
+        s_model.to(self.cfg.device)
+
+        """ For Teacher Model """
+        criterion = getattr(model_loss, self.cfg.loss_fn)(self.cfg.reduction)
+        t_grouped_optimizer_params = get_optimizer_grouped_parameters(
+            t_model,
+            self.cfg.layerwise_lr,
+            self.cfg.layerwise_weight_decay,
+            self.cfg.layerwise_lr_decay
+        )
+        t_optimizer = getattr(transformers, self.cfg.optimizer)(
+            params=t_grouped_optimizer_params,
+            lr=self.cfg.layerwise_lr,
+            eps=self.cfg.layerwise_adam_epsilon,
+            correct_bias=not self.cfg.layerwise_use_bertadam
+        )
+        """ For Student Model """
+        s_grouped_optimizer_params = get_optimizer_grouped_parameters(
+            s_model,
+            self.cfg.layerwise_lr,
+            self.cfg.layerwise_weight_decay,
+            self.cfg.layerwise_lr_decay
+        )
+        s_optimizer = getattr(transformers, self.cfg.optimizer)(
+            params=s_grouped_optimizer_params,
+            lr=self.cfg.layerwise_lr,
+            eps=self.cfg.layerwise_adam_epsilon,
+            correct_bias=not self.cfg.layerwise_use_bertadam
+        )
+
+        t_scheduler = get_scheduler(self.cfg, t_optimizer, len_t_train)
+        s_scheduler = get_scheduler(self.cfg, s_optimizer, len_s_train)
+
+        return t_model, s_model, criterion, t_optimizer, s_optimizer, t_scheduler, s_scheduler, self.save_parameter
+
+    def train_fn(self, t_model, s_model, criterion, t_optimizer, s_optimizer, t_scheduler, s_scheduler,
+                  s_loader_train, p_loader_train, s_valid_loss):
+        """
+        Meta Pseudo Label Training Function
+
+        Args:
+            t: teacher model
+            s: student model
+            s_valid_loss: student model's validation loss by original label data
+
+        [Paper]
+        teacher loss: supervised task loss + Unsupervised task loss + student model's validation loss
+        student loss: meta pseudo label loss
+
+        but, I use only supervised task loss + meta pseudo label loss for teacher loss
+        """
+        scaler = torch.cuda.amp.GradScaler(enabled=True)
+        global_step, score_list = 0, []  # All Fold's average of mean F2-Score
+        t_losses, s_losses = AverageMeter(), AverageMeter()
+        t_model.train(), s_model.train()
+
+        """ Supervised Training: make supervised task loss """
+        for step, (inputs, labels) in enumerate(tqdm(s_loader_train)):
+            t_optimizer.zero_grad()
+            inputs = collate(inputs)
+            for k, v in inputs.items():
+                inputs[k] = v.to(self.cfg.device)  # train to gpu
+            labels = labels.to(self.cfg.device)  # label to gpu
+            batch_size = labels.size(0)
+
+            with torch.cuda.amp.autocast(enabled=self.cfg.amp_scaler):
+                preds = t_model(inputs)
+                t_loss = criterion(preds, labels)
+                new_t_loss = t_loss + s_valid_loss  # final teacher loss, later will add unsupervised loss
+                t_losses.update(new_t_loss, batch_size) # teacher & student model's batch must be same
+
+            if self.cfg.n_gradient_accumulation_steps > 1:
+                new_t_loss = new_t_loss / self.cfg.n_gradient_accumulation_steps
+
+            scaler.scale(new_t_loss).backward()
+            if self.cfg.clipping_grad and (step + 1) % self.cfg.n_gradient_accumulation_steps == 0 or self.cfg.n_gradient_accumulation_steps == 1:
+                scaler.unscale_(t_optimizer)
+                torch.nn.utils.clip_grad_norm(
+                    t_model.parameters(),
+                    self.cfg.max_grad_norm * self.cfg.n_gradient_accumulation_steps
+                )
+                scaler.step(t_optimizer)
+                scaler.update()
+                global_step += 1
+                t_scheduler.step()
+        t_train_loss = t_losses.avg.detach().cpu().numpy()  # supervised loss + student model's validation loss
+
+        """ Pseudo Label Training: make student model's validation loss """
+        for step, inputs in enumerate(tqdm(p_loader_train)):
+            s_optimizer.zero_grad()
+            inputs = collate(inputs)
+            for k, v in inputs.items():
+                inputs[k] = v.to(self.cfg.device)  # un-supervised dataset to gpu
+            with torch.no_grad():
+                pseudo_label = t_model(inputs)  # make pseudo label
+
+            pseudo_label = postprocess(pseudo_label.detach().cpu().squeeze())  # postprocess
+            batch_size = pseudo_label.size(0)
+            pseudo_label = pseudo_label.to(self.cfg.device)  # pseudo label to gpu
+
+            with torch.cuda.amp.autocast(enabled=self.cfg.amp_scaler):
+                preds = s_model(inputs)
+                s_loss = criterion(preds, pseudo_label)
+                s_losses.update(s_loss, batch_size)
+
+            if self.cfg.n_gradient_accumulation_steps > 1:
+                s_loss = s_loss / self.cfg.n_gradient_accumulation_steps
+
+            scaler.scale(s_loss).backward()
+
+            if self.cfg.clipping_grad and (step + 1) % self.cfg.n_gradient_accumulation_steps == 0 or self.cfg.n_gradient_accumulation_steps == 1:
+                scaler.unscale_(t_optimizer)
+                torch.nn.utils.clip_grad_norm(
+                    s_model.parameters(),
+                    self.cfg.max_grad_norm * self.cfg.n_gradient_accumulation_steps
+                )
+                scaler.step(s_optimizer)
+                scaler.update()
+                global_step += 1
+                s_scheduler.step()
+
+        s_train_loss = s_losses.avg.detach().cpu().numpy()
+        return t_train_loss, s_train_loss, t_scheduler.get_lr()[0], s_scheduler.get_lr()[0]
+
+    def valid_fn(self, p_loader_valid, s_model, criterion):
+        """ Validation Function for student model's validation loss """
+        s_valid_losses = AverageMeter()
+        s_model.eval()
+        with torch.no_grad():
+            for step, (inputs, labels) in enumerate(tqdm(p_loader_valid)):
+                inputs = collate(inputs)
+                for k, v in inputs.items():
+                    inputs[k] = v.to(self.cfg.device)
+                labels = labels.to(self.cfg.device)
+                batch_size = labels.size(0)
+                preds = s_model(inputs)
+                s_valid_loss = criterion(preds, labels)
+                s_valid_losses.update(s_valid_loss, batch_size)
+        s_valid_losses = s_valid_losses.avg.detach().cpu().numpy()
+        return s_valid_loss, s_valid_losses

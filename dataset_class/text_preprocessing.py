@@ -131,6 +131,7 @@ def pseudo_dataframe(df1: pd.DataFrame, df2: pd.DataFrame, cfg) -> pd.DataFrame:
     """
     Make Pseudo DataFrame for Meta Pseudo Labeling
     Data from FB1 and FB2 are combined
+    This DataSet is Un-Labled Data
     """
     pseudo_df = pd.concat([df1, df2], axis=0, ignore_index=True)
     pseudo_df.reset_index(drop=True, inplace=True)

@@ -34,7 +34,6 @@ class FBPDataset(Dataset):
 
 class MPLDataset(Dataset):
     """ For Semi-Supervised Learning, Meta Pseudo Labels Pipeline """
-
     def __init__(self, cfg, tokenizer, df):
         super().__init__()
         self.cfg = cfg
@@ -60,6 +59,7 @@ class MPLDataset(Dataset):
     def __getitem__(self, idx):
         inputs = self.tokenizing(self.df.iloc[idx, 1])
         return inputs
+
 
 
 class TestDataset(Dataset):
