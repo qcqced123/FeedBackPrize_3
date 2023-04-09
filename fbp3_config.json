@@ -23,12 +23,12 @@
     },
     "data_settings": {
         "n_folds": 5,
-        "max_len": 1024,
+        "max_len": 512,
         "epochs": 5,
         "batch_size": 16
     },
     "gradient_settings": {
-        "amp_scaler": false,
+        "amp_scaler": true,
         "gradient_checkpoint": true,
         "clipping_grad": true,
         "n_gradient_accumulation_steps": 1,

@@ -322,7 +322,7 @@ class MPLTrainer:
         """
         t_scaler, s_scaler = torch.cuda.amp.GradScaler(enabled=True), torch.cuda.amp.GradScaler(enabled=True)
         t_losses, s_losses = AverageMeter(), AverageMeter()
-        t_model.train(), s_model.train()
+        t_model.train()
 
         """ Supervised Training: make supervised task loss """
         for step, (inputs, labels) in enumerate(tqdm(s_loader_train)):
@@ -335,7 +335,7 @@ class MPLTrainer:
             with torch.cuda.amp.autocast(enabled=True):
                 preds = t_model(inputs)
                 t_loss = criterion(preds, labels)
-                new_t_loss = t_loss + s_valid_loss  # final teacher loss, later will add unsupervised loss
+                new_t_loss = t_loss + s_valid_loss.squeeze()  # final teacher loss, later will add unsupervised loss
                 t_losses.update(new_t_loss, batch_size) # teacher & student model's batch must be same
             if self.cfg.n_gradient_accumulation_steps > 1:
                 new_t_loss = new_t_loss / self.cfg.n_gradient_accumulation_steps
@@ -352,9 +352,10 @@ class MPLTrainer:
                 t_scaler.update()
                 t_scheduler.step()
         t_train_loss = t_losses.avg.detach().cpu().numpy()  # supervised loss + student model's validation loss
-        print(t_train_loss)
+
         """ Pseudo Label Training: make student model's validation loss """
         for p_step, inputs in enumerate(tqdm(p_loader_train)):
+            t_model.eval()
             s_optimizer.zero_grad()
             inputs = collate(inputs)
             for k, v in inputs.items():
@@ -362,6 +363,7 @@ class MPLTrainer:
             with torch.no_grad():
                 pseudo_label = t_model(inputs)  # make pseudo label
 
+            s_model.train()
             pseudo_label = postprocess(pseudo_label.detach().cpu().squeeze())  # postprocess
             batch_size = pseudo_label.size(0)
             pseudo_label = pseudo_label.to(self.cfg.device)  # pseudo label to gpu
