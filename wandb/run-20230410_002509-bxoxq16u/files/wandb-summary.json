@@ -1,0 +1,1 @@
+{"<epoch> Teacher Train Loss": null, "<epoch> Student Train Loss": null, "<epoch> Student Validation Loss": null, "<epoch> Teacher lr": 3.7549443569363142e-06, "<epoch> Student lr": 3.7500000000000005e-06, "_timestamp": 1681066083.871958, "_runtime": 12173.96357011795, "_step": 1, "_wandb": {"runtime": 13077}}

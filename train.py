@@ -1,9 +1,11 @@
+import optuna
 import argparse, collections
 from omegaconf import OmegaConf
+from optuna.integration.wandb import WeightsAndBiasesCallback
 
-from configuration import CFG
-from parse_config import ConfigParser
 import trainer.train_loop as train_loop
+from parse_config import ConfigParser
+from configuration import CFG
 from utils.helper import check_library, all_type_seed
 from utils import sync_config
 
@@ -16,7 +18,16 @@ def main(config_path: str, cfg) -> None:
     sync_config(OmegaConf.load(config_path))  # load json config
     # cfg = OmegaConf.structured(CFG)
     # OmegaConf.merge(cfg)  # merge with cli_options
-    getattr(train_loop, cfg.loop)(cfg)  # init object
+    if cfg.optuna:
+        study = optuna.create_study(
+            study_name=cfg.name,
+            direction='minimize',
+            pruner=optuna.pruners.MedianPruner(n_warmup_steps=5),
+            storage=f'sqlite:///{cfg.checkpoint_dir}{cfg.name}.db',
+            load_if_exists=True
+        )
+    else:
+        getattr(train_loop, cfg.loop)(cfg)  # init object
 
 
 if __name__ == '__main__':

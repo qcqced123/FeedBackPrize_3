@@ -28,11 +28,11 @@
         "batch_size": 16
     },
     "gradient_settings": {
-        "amp_scaler": true,
+        "amp_scaler": false,
         "gradient_checkpoint": true,
         "clipping_grad": true,
         "n_gradient_accumulation_steps": 1,
-        "max_grad_norm": 10
+        "max_grad_norm": 1
     },
     "loss_options": {
         "loss_fn": "WeightMCRMSELoss",
@@ -42,7 +42,7 @@
         "metrics": ["WeightMCRMSELoss", "f_beta", "recall"]
     },
     "optimizer_options": {
-        "optimizer": "AdamW",
+        "optimizer": "AdamW",5
         "llrd": true,
         "layerwise_lr": 5e-6,
         "layerwise_lr_decay": 0.9,

@@ -125,3 +125,15 @@ def mpl_loop(cfg: any) -> None:
 
     wandb.finish()
 
+
+def hyper_params_tuning(cfg: any, trial: any) -> None:
+    """ Optuna Tuning Hyper-Params Loop Function """
+    wandb.init(project=cfg.name,
+               name=f'[{cfg.model_arch}]' + '/Meta Pseudo Label/' + cfg.model,
+               config=class2dict(cfg),
+               group=cfg.model,
+               job_type='train',
+               entity="qcqced")
+
+
+    wandb.finish()

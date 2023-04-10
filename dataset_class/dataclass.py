@@ -61,7 +61,6 @@ class MPLDataset(Dataset):
         return inputs
 
 
-
 class TestDataset(Dataset):
     """ For Inference Dataset Class """
     def __init__(self, cfg, tokenizer, df):

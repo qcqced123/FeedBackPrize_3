@@ -18,7 +18,7 @@ class CFG:
 
     """ Common Options """
     wandb = True
-    optuna = True  # if you want to tune hyperparameter, set True
+    optuna = False  # if you want to tune hyperparameter, set True
     competition = 'FB3'
     seed = 42
     cfg_name = 'CFG'
@@ -34,7 +34,7 @@ class CFG:
     batch_size = 64
 
     """ Gradient Options """
-    amp_scaler = True
+    amp_scaler = False
     gradient_checkpoint = True  # save parameter
     clipping_grad = True  # clip_grad_norm
     n_gradient_accumulation_steps = 1
