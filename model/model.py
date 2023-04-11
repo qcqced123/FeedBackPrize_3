@@ -76,8 +76,7 @@ class MPLModel(nn.Module):
         self._init_weights(self.fc)
 
         if cfg.reinit:
-            # reinit_topk(self.model, cfg.num_reinit)
-            self.reinit_topk_layers()
+            reinit_topk(self.model, cfg.num_reinit)
 
         if cfg.freeze:
             freeze(self.model)
@@ -99,15 +98,6 @@ class MPLModel(nn.Module):
             """ reference from torch.nn.Layernorm with elementwise_affine=True """
             module.weight.data.fill_(1.0)
             module.bias.data.zero_()
-
-    def reinit_topk_layers(self):
-        """
-        Re-initialize the last-k transformer layers.
-        Args:
-            model: The target transformer model.
-            num_layers: The number of layers to be re-initialized.
-        """
-        self.model.encoder.layer[-self.cfg.num_reinit:].apply(self.model._init_weights)  # model class에 있는거
 
     def feature(self, inputs: dict):
         outputs = self.model(**inputs)

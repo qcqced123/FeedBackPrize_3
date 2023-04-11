@@ -40,7 +40,7 @@ class WeightMCRMSELoss(nn.Module):
         super().__init__()
         self.RMSE = RMSELoss(reduction=reduction)
         self.num_scored = num_scored
-        self._loss_rate = torch.Tensor([0.21, 0.16, 0.10, 0.16, 0.21, 0.16], dtype=torch.float32)
+        self._loss_rate = torch.tensor([0.21, 0.16, 0.10, 0.16, 0.21, 0.16], dtype=torch.float32)
 
     def forward(self, yhat, y):
         score = 0

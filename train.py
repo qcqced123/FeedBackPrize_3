@@ -19,6 +19,7 @@ def main(config_path: str, cfg) -> None:
     # cfg = OmegaConf.structured(CFG)
     # OmegaConf.merge(cfg)  # merge with cli_options
     if cfg.optuna:
+        """ Optuna Hyperparameter Optimization """
         study = optuna.create_study(
             study_name=cfg.name,
             direction='minimize',

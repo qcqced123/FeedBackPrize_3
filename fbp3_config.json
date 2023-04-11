@@ -42,7 +42,7 @@
         "metrics": ["WeightMCRMSELoss", "f_beta", "recall"]
     },
     "optimizer_options": {
-        "optimizer": "AdamW",5
+        "optimizer": "AdamW",
         "llrd": true,
         "layerwise_lr": 5e-6,
         "layerwise_lr_decay": 0.9,
