@@ -108,3 +108,5 @@ class BinaryCrossEntropyLoss(nn.Module):
     def forward(self, y_pred, y_true) -> Tensor:
         criterion = nn.BCEWithLogitsLoss(reduction=self.reduction)
         return criterion(y_pred, y_true)
+
+

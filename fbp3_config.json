@@ -3,7 +3,7 @@
         "train": true,
         "test": false,
         "checkpoint_dir": "./saved/model",
-        "resume": false,
+        "resume": true,
         "state_dict": "/",
         "name": "MPLTrainer",
         "loop": "mpl_loop",
@@ -65,7 +65,7 @@
     },
     "model_utils": {
         "freeze": false,
-        "reinit": true,
+        "reinit": false,
         "num_reinit": 5,
         "awp": false,
         "nth_awp_start_epoch": 0,

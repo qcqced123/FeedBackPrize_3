@@ -19,9 +19,9 @@ class FBPModel(nn.Module):
         )
         self.fc = nn.Linear(self.auto_cfg.hidden_size, 6)
         self.pooling = getattr(pooling, cfg.pooling)(self.auto_cfg)
-        self._init_weights(self.fc)
 
         if cfg.reinit:
+            self._init_weights(self.fc)
             reinit_topk(self.model, cfg.num_reinit)
 
         if cfg.freeze:
@@ -73,9 +73,9 @@ class MPLModel(nn.Module):
         )
         self.fc = nn.Linear(self.auto_cfg.hidden_size, 6)
         self.pooling = getattr(pooling, cfg.pooling)(self.auto_cfg)
-        self._init_weights(self.fc)
 
         if cfg.reinit:
+            self._init_weights(self.fc)
             reinit_topk(self.model, cfg.num_reinit)
 
         if cfg.freeze:

@@ -70,3 +70,18 @@ def f_beta(y_true, y_pred, beta: float = 2) -> float:
     f_recall = tp / (tp + fn)
     score = (1 + beta ** 2) * f_precision * f_recall / (beta ** 2 * f_precision + f_recall)
     return round(score.mean(), 4)
+
+
+def map_k(y_true: any, y_pred: any, k: int) -> Tensor:
+    """
+    mAP@K: mean of average precision@k
+    Args:
+        y_true: string or int, must be sorted by descending probability and type must be same with y_pred
+                (batch_size, labels)
+        y_pred: string or int, must be sorted by Ranking and type must be same with y_true
+                (batch_size, predictions)
+        k: top k
+    """
+    score = np.array([1 / (pred[:k].index(label) + 1) for label, pred in zip(y_true, y_pred)])
+    return round(score.mean(), 4)
+
