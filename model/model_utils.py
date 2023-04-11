@@ -47,7 +47,7 @@ def init_weights(auto_cfg, module) -> None:
         module.weight.data.fill_(1.0)
 
 
-def reinit_topk(model, num_layers) -> None:
+def reinit_topk(model, num_layers):
     """
     Re-initialize the last-k transformer Encoder layers.
     Encoder Layer: Embedding, Attention Head, LayerNorm, Feed Forward

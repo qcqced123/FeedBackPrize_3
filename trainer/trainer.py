@@ -1,5 +1,3 @@
-import gc, transformers
-import torch
 import dataset_class.dataclass as dataset_class
 import model.loss as model_loss
 import model.model as model_arch
@@ -95,7 +93,7 @@ class FBPTrainer:
     def train_fn(self, loader_train, model, criterion, optimizer, scheduler, epoch, awp=None,
                  swa_model=None, swa_start=None, swa_scheduler=None,):
         """ Training Function """
-        scaler = torch.cuda.amp.GradScaler(enabled=True)
+        scaler = torch.cuda.amp.GradScaler(enabled=self.cfg.amp_scaler)
         global_step, score_list = 0, []  # All Fold's average of mean F2-Score
         losses = AverageMeter()
         model.train()
@@ -323,7 +321,8 @@ class MPLTrainer:
         but, I use only supervised task loss + meta pseudo label loss for teacher loss
         """
         torch.autograd.set_detect_anomaly(True)
-        t_scaler, s_scaler = torch.cuda.amp.GradScaler(enabled=True), torch.cuda.amp.GradScaler(enabled=True)
+        t_scaler = torch.cuda.amp.GradScaler(enabled=self.cfg.amp_scaler)
+        s_scaler = torch.cuda.amp.GradScaler(enabled=self.cfg.amp_scaler)
         t_losses, s_losses = AverageMeter(), AverageMeter()
         t_model.train(), s_model.train()
         """ Supervised Training: make supervised task loss """
@@ -362,6 +361,7 @@ class MPLTrainer:
             for k, v in inputs.items():
                 inputs[k] = v.to(self.cfg.device)  # un-supervised dataset to gpu
             # with torch.no_grad():
+            print(t_model.fc.weight.grad)
             pseudo_label = t_model(inputs)  # make pseudo label
             print(pseudo_label)
             pseudo_label = postprocess(pseudo_label.detach().cpu().squeeze())  # postprocess
