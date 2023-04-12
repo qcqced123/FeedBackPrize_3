@@ -83,7 +83,7 @@ def mpl_loop(cfg: any) -> None:
                group=cfg.model,
                job_type='train',
                entity="qcqced")
-    val_score_max = np.inf
+    val_score_max = 0.4700
     train_input = getattr(trainer, cfg.name)(cfg, g)  # init object
     s_loader_train, s_train, p_loader_train, p_loader_valid, p_train = train_input.make_batch()
     t_model, s_model, criterion, t_optimizer, \

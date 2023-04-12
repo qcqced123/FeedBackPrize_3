@@ -257,7 +257,7 @@ class MPLTrainer:
         t_model = getattr(model_arch, self.cfg.model_arch)(self.cfg)
         s_model = getattr(model_arch, self.cfg.model_arch)(self.cfg)
         t_model.load_state_dict(torch.load(
-                self.cfg.checkpoint_dir + self.cfg.state_dict + 'microsoft-deberta-v3-large_fold0_best.pth',
+                self.cfg.checkpoint_dir + self.cfg.state_dict + 'MPL_Teacher_microsoft-deberta-v3-large_state_dict.pth',
                 map_location=self.cfg.device
                 ),
                 strict=False
@@ -361,10 +361,9 @@ class MPLTrainer:
             for k, v in inputs.items():
                 inputs[k] = v.to(self.cfg.device)  # un-supervised dataset to gpu
             # with torch.no_grad():
-            print(t_model.fc.weight.grad.nonzero())
+            print(t_model.fc.weight.grad)
             pseudo_label = t_model(inputs)  # make pseudo label
             print(pseudo_label)
-            print(pseudo_label.grad.nonzero())
             pseudo_label = postprocess(pseudo_label.detach().cpu().squeeze())  # postprocess
             batch_size = pseudo_label.size(0)
             pseudo_label = pseudo_label.to(self.cfg.device)  # pseudo label to gpu
@@ -372,7 +371,6 @@ class MPLTrainer:
             with torch.cuda.amp.autocast(enabled=self.cfg.amp_scaler):
                 preds = s_model(inputs)
                 print(preds)
-                print(preds.grad.nonzero())
                 s_loss = criterion(preds, pseudo_label)
                 print(s_loss)
                 s_losses.update(s_loss, batch_size)
