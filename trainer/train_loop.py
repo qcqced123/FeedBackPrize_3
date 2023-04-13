@@ -24,14 +24,14 @@ def train_loop(cfg: any) -> None:
         wandb.init(project=cfg.name,
                    name=f'[{cfg.model_arch}]' + f'fold{fold}/' + cfg.model,
                    config=class2dict(cfg),
-                   group=f'{cfg.pooling}/{cfg.model}',
+                   group=f'{cfg.pooling}/max_length_{cfg.max_len}/{cfg.model}',
                    job_type='train',
                    entity="qcqced")
         val_score_max, fold_swa_loss = np.inf, []
         train_input = getattr(trainer, cfg.name)(cfg, g)  # init object
         loader_train, loader_valid, train = train_input.make_batch(fold)
-        model, swa_model, criterion, optimizer,\
-            lr_scheduler, swa_scheduler, awp,save_parameter = train_input.model_setting(len(train))
+        model, swa_model, criterion, val_criterion, optimizer,\
+            lr_scheduler, swa_scheduler, awp = train_input.model_setting(len(train))
 
         for epoch in range(cfg.epochs):
             print(f'[{epoch + 1}/{cfg.epochs}] Train & Validation')
@@ -40,7 +40,7 @@ def train_loop(cfg: any) -> None:
                 epoch, awp, swa_model, cfg.swa_start, swa_scheduler
             )
             valid_loss = train_input.valid_fn(
-                loader_valid, model, criterion
+                loader_valid, model, val_criterion
             )
             wandb.log({
                 '<epoch> Train Loss': train_loss,
@@ -56,7 +56,7 @@ def train_loop(cfg: any) -> None:
                 print(f'[Update] Valid Score : ({val_score_max:.4f} => {valid_loss:.4f}) Save Parameter')
                 print(f'Best Score: {valid_loss}')
                 torch.save(model.state_dict(),
-                           f'{cfg.checkpoint_dir}fold{fold}_{cfg.pooling}_{get_name(cfg)}_state_dict.pth')
+                           f'{cfg.checkpoint_dir}fold{fold}_{cfg.pooling}_{cfg.max_len}_{get_name(cfg)}_state_dict.pth')
                 val_score_max = valid_loss
 
             del train_loss, valid_loss, grad_norm, lr
@@ -70,8 +70,8 @@ def train_loop(cfg: any) -> None:
             print(f'[Update] Valid Score : ({val_score_max:.4f} => {swa_loss:.4f}) Save Parameter')
             print(f'Best Score: {swa_loss}')
             torch.save(model.state_dict(),
-                       f'{cfg.checkpoint_dir}SWA_fold{fold}_{cfg.pooling}_{get_name(cfg)}_state_dict.pth')
-
+                       f'{cfg.checkpoint_dir}SWA_fold{fold}_{cfg.pooling}_{cfg.max_len}_{get_name(cfg)}_state_dict.pth')
+            wandb.log({'<epoch> Valid Loss': swa_loss})
     wandb.finish()
 
 

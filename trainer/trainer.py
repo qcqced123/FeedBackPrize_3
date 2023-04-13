@@ -60,6 +60,7 @@ class FBPTrainer:
         swa_model = AveragedModel(model)
 
         criterion = getattr(model_loss, self.cfg.loss_fn)(self.cfg.reduction)
+        val_criterion = getattr(model_loss, self.cfg.val_loss_fn)(self.cfg.reduction)
         grouped_optimizer_params = get_optimizer_grouped_parameters(
             model,
             self.cfg.layerwise_lr,
@@ -87,12 +88,13 @@ class FBPTrainer:
                 adv_eps=self.cfg.awp_eps
             )
 
-        return model, swa_model, criterion, optimizer, lr_scheduler, swa_scheduler, awp, self.save_parameter
+        return model, swa_model, criterion, val_criterion, optimizer, lr_scheduler, swa_scheduler, awp
 
     # Step 3.1 Train & Validation Function
     def train_fn(self, loader_train, model, criterion, optimizer, scheduler, epoch, awp=None,
                  swa_model=None, swa_start=None, swa_scheduler=None,):
         """ Training Function """
+        torch.autograd.set_detect_anomaly(True)
         scaler = torch.cuda.amp.GradScaler(enabled=self.cfg.amp_scaler)
         global_step, score_list = 0, []  # All Fold's average of mean F2-Score
         losses = AverageMeter()
@@ -140,7 +142,7 @@ class FBPTrainer:
         grad_norm = grad_norm.detach().cpu().numpy()
         return train_loss, grad_norm, scheduler.get_lr()[0]
 
-    def valid_fn(self, loader_valid, model, criterion):
+    def valid_fn(self, loader_valid, model, val_criterion):
         """ Validation Function """
         valid_losses = AverageMeter()
         model.eval()
@@ -152,7 +154,7 @@ class FBPTrainer:
                 labels = labels.to(self.cfg.device)
                 batch_size = labels.size(0)
                 preds = model(inputs)
-                valid_loss = criterion(preds, labels)
+                valid_loss = val_criterion(preds, labels)
                 valid_losses.update(valid_loss, batch_size)
         valid_loss = valid_losses.avg.detach().cpu().numpy()
         return valid_loss
@@ -361,16 +363,12 @@ class MPLTrainer:
             for k, v in inputs.items():
                 inputs[k] = v.to(self.cfg.device)  # un-supervised dataset to gpu
             # with torch.no_grad():
-            print(t_model.fc.weight.grad)
             pseudo_label = t_model(inputs)  # make pseudo label
-            print(pseudo_label)
             pseudo_label = postprocess(pseudo_label.detach().cpu().squeeze())  # postprocess
             batch_size = pseudo_label.size(0)
             pseudo_label = pseudo_label.to(self.cfg.device)  # pseudo label to gpu
-            print(pseudo_label)
             with torch.cuda.amp.autocast(enabled=self.cfg.amp_scaler):
                 preds = s_model(inputs)
-                print(preds)
                 s_loss = criterion(preds, pseudo_label)
                 print(s_loss)
                 s_losses.update(s_loss, batch_size)

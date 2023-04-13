@@ -41,7 +41,8 @@ class CFG:
     max_grad_norm = 1000
 
     """ Loss & Metrics Options """
-    loss_fn = 'WeightedMSELoss'
+    loss_fn = 'SmoothL1Loss'
+    val_loss_fn = 'WeightedMSELoss'
     reduction = 'mean'
     metrics = ['MCRMSE', 'f_beta', 'recall']
 
@@ -70,6 +71,7 @@ class CFG:
 
     """ Model_Utils Options """
     freeze = False
+    num_freeze = 2
     reinit = True
     num_reinit = 0
     awp = False

@@ -2,13 +2,13 @@
     "pipeline_setting": {
         "train": true,
         "test": false,
-        "checkpoint_dir": "./saved/model/",
-        "resume": true,
+        "checkpoint_dir": "./saved/model/fine_tuned_meanpool/",
+        "resume": false,
         "state_dict": "MPL_Student_microsoft-deberta-v3-large_state_dict.pth",
-        "name": "MPLTrainer",
-        "loop": "mpl_loop",
-        "dataset": "MPLDataset",
-        "model_arch": "MPLModel",
+        "name": "FBPTrainer",
+        "loop": "train_loop",
+        "dataset": "FBPDataset",
+        "model_arch": "FBPModel",
         "model": "microsoft/deberta-v3-large",
         "pooling": "MeanPooling"
     },
@@ -23,9 +23,9 @@
     },
     "data_settings": {
         "n_folds": 5,
-        "max_len": 512,
-        "epochs": 5,
-        "batch_size": 32
+        "max_len": 1536,
+        "epochs": 10,
+        "batch_size": 8
     },
     "gradient_settings": {
         "amp_scaler": false,
@@ -35,7 +35,8 @@
         "max_grad_norm": 1
     },
     "loss_options": {
-        "loss_fn": "WeightMCRMSELoss",
+        "loss_fn": "SmoothL1Loss",
+        "val_loss_fn": "MCRMSELoss",
         "reduction": "mean"
     },
     "metrics_options": {
@@ -44,7 +45,7 @@
     "optimizer_options": {
         "optimizer": "AdamW",
         "llrd": true,
-        "layerwise_lr": 2e-6,
+        "layerwise_lr": 5e-6,
         "layerwise_lr_decay": 0.9,
         "layerwise_weight_decay": 1e-2,
         "layerwise_adam_epsilon": 1e-6,
@@ -64,9 +65,10 @@
         "anneal_strategy": "cos"
     },
     "model_utils": {
-        "freeze": false,
-        "reinit": false,
-        "num_reinit": 0,
+        "freeze": true,
+        "num_freeze": 4,
+        "reinit": true,
+        "num_reinit": 2,
         "awp": false,
         "nth_awp_start_epoch": 0,
         "awp_eps": 1e-2,

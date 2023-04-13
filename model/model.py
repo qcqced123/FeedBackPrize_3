@@ -18,16 +18,20 @@ class FBPModel(nn.Module):
             cfg.model,
             config=self.auto_cfg
         )
-        # self.model.load_state_dict(torch.load(cfg.checkpoint_dir + cfg.state_dict), strict=False)
         self.fc = nn.Linear(self.auto_cfg.hidden_size, 6)
         self.pooling = getattr(pooling, cfg.pooling)(self.auto_cfg)
+        self.model.load_state_dict(
+            torch.load(cfg.checkpoint_dir + cfg.state_dict),
+            strict=False
+        )  # load student model's weight: it already has fc layer, so need to init fc layer later
 
         if cfg.reinit:
             self._init_weights(self.fc)
             reinit_topk(self.model, cfg.num_reinit)
 
         if cfg.freeze:
-            freeze(self.model)
+            freeze(self.model.embeddings)
+            freeze(self.model.encoder.layer[:cfg.num_freeze])
 
         if cfg.gradient_checkpoint:
             self.model.gradient_checkpointing_enable()
