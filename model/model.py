@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import model.pooling as pooling
 from torch import Tensor
@@ -17,6 +18,7 @@ class FBPModel(nn.Module):
             cfg.model,
             config=self.auto_cfg
         )
+        # self.model.load_state_dict(torch.load(cfg.checkpoint_dir + cfg.state_dict), strict=False)
         self.fc = nn.Linear(self.auto_cfg.hidden_size, 6)
         self.pooling = getattr(pooling, cfg.pooling)(self.auto_cfg)
 

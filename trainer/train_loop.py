@@ -19,17 +19,17 @@ g.manual_seed(CFG.seed)
 def train_loop(cfg: any) -> None:
     """ Base Trainer Loop Function """
     fold_list = [i for i in range(cfg.n_folds)]
-    for fold in tqdm(fold_list[4:5]):
+    for fold in tqdm(fold_list):
         print(f'============== {fold}th Fold Train & Validation ==============')
         wandb.init(project=cfg.name,
                    name=f'[{cfg.model_arch}]' + f'fold{fold}/' + cfg.model,
                    config=class2dict(cfg),
-                   group=cfg.model,
+                   group=f'{cfg.pooling}/{cfg.model}',
                    job_type='train',
                    entity="qcqced")
         val_score_max, fold_swa_loss = np.inf, []
         train_input = getattr(trainer, cfg.name)(cfg, g)  # init object
-        loader_train, loader_valid, train = train_input.make_batch()
+        loader_train, loader_valid, train = train_input.make_batch(fold)
         model, swa_model, criterion, optimizer,\
             lr_scheduler, swa_scheduler, awp,save_parameter = train_input.model_setting(len(train))
 
@@ -56,7 +56,7 @@ def train_loop(cfg: any) -> None:
                 print(f'[Update] Valid Score : ({val_score_max:.4f} => {valid_loss:.4f}) Save Parameter')
                 print(f'Best Score: {valid_loss}')
                 torch.save(model.state_dict(),
-                           f'{cfg.checkpoint_dir}{cfg.state_dict}fold{fold}_{get_name(cfg)}_state_dict.pth')
+                           f'{cfg.checkpoint_dir}fold{fold}_{cfg.pooling}_{get_name(cfg)}_state_dict.pth')
                 val_score_max = valid_loss
 
             del train_loss, valid_loss, grad_norm, lr
@@ -70,7 +70,7 @@ def train_loop(cfg: any) -> None:
             print(f'[Update] Valid Score : ({val_score_max:.4f} => {swa_loss:.4f}) Save Parameter')
             print(f'Best Score: {swa_loss}')
             torch.save(model.state_dict(),
-                       f'{cfg.checkpoint_dir}{cfg.state_dict}SWA_fold{fold}_{get_name(cfg)}_state_dict.pth')
+                       f'{cfg.checkpoint_dir}SWA_fold{fold}_{cfg.pooling}_{get_name(cfg)}_state_dict.pth')
 
     wandb.finish()
 
@@ -83,14 +83,14 @@ def mpl_loop(cfg: any) -> None:
                group=cfg.model,
                job_type='train',
                entity="qcqced")
-    val_score_max = 0.4700
+    val_score_max = 0.4536
     train_input = getattr(trainer, cfg.name)(cfg, g)  # init object
     s_loader_train, s_train, p_loader_train, p_loader_valid, p_train = train_input.make_batch()
     t_model, s_model, criterion, t_optimizer, \
         s_optimizer, t_scheduler, s_scheduler, save_parameter = train_input.model_setting(
             len(s_train), len(p_train)
         )
-    s_valid_loss = torch.Tensor([0]).to(cfg.device)
+    s_valid_loss = torch.Tensor([0.4536]).to(cfg.device)
     for epoch in range(cfg.epochs):
         print(f'[{epoch + 1}/{cfg.epochs}] Train & Validation')
         t_train_loss, s_train_loss, t_lr, s_lr = train_input.train_fn(
@@ -134,6 +134,5 @@ def hyper_params_tuning(cfg: any, trial: any) -> None:
                group=cfg.model,
                job_type='train',
                entity="qcqced")
-
 
     wandb.finish()

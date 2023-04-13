@@ -257,14 +257,14 @@ class MPLTrainer:
         t_model = getattr(model_arch, self.cfg.model_arch)(self.cfg)
         s_model = getattr(model_arch, self.cfg.model_arch)(self.cfg)
         t_model.load_state_dict(torch.load(
-                self.cfg.checkpoint_dir + self.cfg.state_dict + 'MPL_Teacher_microsoft-deberta-v3-large_state_dict.pth',
+                self.cfg.checkpoint_dir + 'MPL_Teacher_microsoft-deberta-v3-large_state_dict.pth',
                 map_location=self.cfg.device
                 ),
                 strict=False
         )
         if self.cfg.resume:
             s_model.load_state_dict(torch.load(
-                self.cfg.checkpoint_dir + self.cfg.state_dict + 'MPL_Student_microsoft-deberta-v3-large_state_dict.pth',
+                self.cfg.checkpoint_dir + self.cfg.state_dict,
                 map_location=self.cfg.device
                 )
             )

@@ -55,5 +55,6 @@ def reinit_topk(model, num_layers):
         model: The target transformer model.
         num_layers: The number of layers to be re-initialized.
     """
-    model.encoder.layer[-num_layers:].apply(model._init_weights)
+    if num_layers > 0:
+        model.encoder.layer[-num_layers:].apply(model._init_weights)
 

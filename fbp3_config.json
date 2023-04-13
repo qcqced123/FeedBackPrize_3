@@ -2,9 +2,9 @@
     "pipeline_setting": {
         "train": true,
         "test": false,
-        "checkpoint_dir": "./saved/model",
+        "checkpoint_dir": "./saved/model/",
         "resume": true,
-        "state_dict": "/",
+        "state_dict": "MPL_Student_microsoft-deberta-v3-large_state_dict.pth",
         "name": "MPLTrainer",
         "loop": "mpl_loop",
         "dataset": "MPLDataset",
@@ -25,7 +25,7 @@
         "n_folds": 5,
         "max_len": 512,
         "epochs": 5,
-        "batch_size": 16
+        "batch_size": 32
     },
     "gradient_settings": {
         "amp_scaler": false,
@@ -44,7 +44,7 @@
     "optimizer_options": {
         "optimizer": "AdamW",
         "llrd": true,
-        "layerwise_lr": 5e-6,
+        "layerwise_lr": 2e-6,
         "layerwise_lr_decay": 0.9,
         "layerwise_weight_decay": 1e-2,
         "layerwise_adam_epsilon": 1e-6,
@@ -60,13 +60,13 @@
     "swa_options": {
         "swa": true,
         "swa_lr": 5e-6,
-        "anneal_epochs": 2,
+        "anneal_epochs": 1,
         "anneal_strategy": "cos"
     },
     "model_utils": {
         "freeze": false,
         "reinit": false,
-        "num_reinit": 5,
+        "num_reinit": 0,
         "awp": false,
         "nth_awp_start_epoch": 0,
         "awp_eps": 1e-2,

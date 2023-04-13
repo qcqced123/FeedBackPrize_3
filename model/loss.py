@@ -88,6 +88,17 @@ class WeightedMSELoss(nn.Module):
         return loss
 
 
+class SmoothL1Loss(nn.Module):
+    """ Smooth L1 Loss in Pytorch """
+    def __init__(self, reduction):
+        super().__init__()
+        self.reduction = reduction
+
+    def forward(self, y_pred, y_true) -> Tensor:
+        criterion = nn.SmoothL1Loss(reduction=self.reduction)
+        return criterion(y_pred, y_true)
+
+
 # Cross-Entropy Loss
 class CrossEntropyLoss(nn.Module):
     def __init__(self, reduction):

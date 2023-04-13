@@ -48,7 +48,7 @@ class CFG:
     """ Optimizer with LLRD Options """
     optimizer = 'AdamW'  # options: SWA, AdamW
     llrd = True
-    layerwise_lr = 5e-5
+    layerwise_lr = 5e-6
     layerwise_lr_decay = 0.9
     layerwise_weight_decay = 1e-2
     layerwise_adam_epsilon = 1e-6
@@ -71,7 +71,7 @@ class CFG:
     """ Model_Utils Options """
     freeze = False
     reinit = True
-    num_reinit = 5
+    num_reinit = 0
     awp = False
     nth_awp_start_epoch = 10
     awp_eps = 1e-2
