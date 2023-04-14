@@ -19,7 +19,7 @@ g.manual_seed(CFG.seed)
 def train_loop(cfg: any) -> None:
     """ Base Trainer Loop Function """
     fold_list = [i for i in range(cfg.n_folds)]
-    for fold in tqdm(fold_list[2:]):
+    for fold in tqdm(fold_list[3:4]):
         print(f'============== {fold}th Fold Train & Validation ==============')
         wandb.init(
             project=cfg.name,
@@ -73,7 +73,7 @@ def train_loop(cfg: any) -> None:
             gc.collect(), torch.cuda.empty_cache()
 
         update_bn(loader_train, swa_model)
-        swa_loss = train_input.swa_fn(loader_valid, swa_model, criterion)
+        swa_loss = train_input.swa_fn(loader_valid, swa_model, val_criterion)
         print(f'Fold[{fold}/{fold_list[-1]}] SWA Loss: {np.round(swa_loss, 4)}')
 
         if val_score_max >= swa_loss:
@@ -82,7 +82,8 @@ def train_loop(cfg: any) -> None:
             torch.save(model.state_dict(),
                        f'{cfg.checkpoint_dir}SWA_fold{fold}_{cfg.pooling}_{cfg.max_len}_{get_name(cfg)}_state_dict.pth')
             wandb.log({'<epoch> Valid Loss': swa_loss})
-    wandb.finish()
+        
+        wandb.finish()
 
 
 def mpl_loop(cfg: any) -> None:

@@ -9,7 +9,7 @@ _wandb:
     is_jupyter_run: false
     is_kaggle_kernel: false
     python_version: 3.9.13
-    start_time: 1681424678.558567
+    start_time: 1681437818.650801
     t:
       1:
       - 1
@@ -31,7 +31,6 @@ _wandb:
       - 13
       - 16
       - 23
-      - 24
       4: 3.9.13
       5: 0.14.0
       6: 4.24.0
@@ -192,6 +191,9 @@ seed:
 state_dict:
   desc: null
   value: MPL_Student_microsoft-deberta-v3-large_state_dict.pth
+stop_mode:
+  desc: null
+  value: min
 swa:
   desc: null
   value: true
