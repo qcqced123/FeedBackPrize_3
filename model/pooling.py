@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 # WeightedLayerPooling: Use Intermediate Layer's Embedding
 class WeightedLayerPooling(nn.Module):
-    def __init__(self, auto_cfg, num_hidden_layers, layer_start: int = 4, layer_weights = None):
+    def __init__(self, auto_cfg, layer_start: int = 4, layer_weights=None):
         super(WeightedLayerPooling, self).__init__()
         self.layer_start = layer_start
         self.num_hidden_layers = auto_cfg.num_hidden_layers
@@ -52,6 +52,38 @@ class AttentionPooling(nn.Module):
 
 
 # Mean Pooling
+class GEMPooling(nn.Module):
+    """
+    Generalized Mean Pooling for Natural Language Processing
+    This class version of GEMPooling for NLP, Transfer from Computer Vision Task Code
+    Mean Pooling <= GEMPooling <= Max Pooling
+    Because of doing exponent to each token embeddings, GEMPooling is like as weight to more activation token
+
+    [Reference]
+    https://paperswithcode.com/method/generalized-mean-pooling
+    """
+    def __init__(self, auto_cfg):
+        super(GEMPooling, self).__init__()
+
+    @staticmethod
+    def forward(self, last_hidden_state, attention_mask, p: int = 3) -> Tensor:
+        """
+        1) Expand Attention Mask from [batch_size, max_len] to [batch_size, max_len, hidden_size]
+        2) Sum Embeddings along max_len axis so now we have [batch_size, hidden_size]
+        3) Sum Mask along max_len axis, This is done so that we can ignore padding tokens
+        4) Average
+        """
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
+        sum_embeddings = torch.sum(
+            torch.pow(last_hidden_state * input_mask_expanded, p), 1
+        )
+        sum_mask = input_mask_expanded.sum(1)
+        sum_mask = torch.clamp(sum_mask, min=1e-9)
+        gem_embeddings = torch.pow(sum_embeddings / sum_mask, 1/p)
+        return gem_embeddings
+
+
+# Mean Pooling
 class MeanPooling(nn.Module):
     def __init__(self, auto_cfg):
         super(MeanPooling, self).__init__()
@@ -61,7 +93,7 @@ class MeanPooling(nn.Module):
         input_mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
         sum_embeddings = torch.sum(last_hidden_state * input_mask_expanded, 1)
         sum_mask = input_mask_expanded.sum(1)
-        sum_mask = torch.clamp(sum_mask, min=1e-9)
+        sum_mask = torch.clamp(sum_mask, min=1e-9)  # if lower than threshold, replace value to threshold (parameter min)
         mean_embeddings = sum_embeddings / sum_mask
         return mean_embeddings
 

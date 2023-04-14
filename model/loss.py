@@ -31,8 +31,8 @@ class MCRMSELoss(nn.Module):
 # Weighted MCRMSE Loss => Apply different loss rate per target classes
 class WeightMCRMSELoss(nn.Module):
     """
-    Apply loss rate per target classes
-
+    Apply loss rate per target classes for using Meta Pseudo Labeling
+    Weighted Loss can transfer original label data's distribution to pseudo label data
     [Reference]
     https://www.kaggle.com/competitions/feedback-prize-english-language-learning/discussion/369609
     """
