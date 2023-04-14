@@ -68,21 +68,21 @@ def train_loop(cfg: any) -> None:
             early_stopping(valid_loss)
             if early_stopping.early_stop:
                 break
-
             del train_loss, valid_loss, grad_norm, lr
             gc.collect(), torch.cuda.empty_cache()
+            
+        if not early_stopping.early_stop:
+            update_bn(loader_train, swa_model)
+            swa_loss = train_input.swa_fn(loader_valid, swa_model, val_criterion)
+            print(f'Fold[{fold}/{fold_list[-1]}] SWA Loss: {np.round(swa_loss, 4)}')
 
-        update_bn(loader_train, swa_model)
-        swa_loss = train_input.swa_fn(loader_valid, swa_model, val_criterion)
-        print(f'Fold[{fold}/{fold_list[-1]}] SWA Loss: {np.round(swa_loss, 4)}')
+            if val_score_max >= swa_loss:
+                print(f'[Update] Valid Score : ({val_score_max:.4f} => {swa_loss:.4f}) Save Parameter')
+                print(f'Best Score: {swa_loss}')
+                torch.save(model.state_dict(),
+                           f'{cfg.checkpoint_dir}SWA_fold{fold}_{cfg.pooling}_{cfg.max_len}_{get_name(cfg)}_state_dict.pth')
+                wandb.log({'<epoch> Valid Loss': swa_loss})
 
-        if val_score_max >= swa_loss:
-            print(f'[Update] Valid Score : ({val_score_max:.4f} => {swa_loss:.4f}) Save Parameter')
-            print(f'Best Score: {swa_loss}')
-            torch.save(model.state_dict(),
-                       f'{cfg.checkpoint_dir}SWA_fold{fold}_{cfg.pooling}_{cfg.max_len}_{get_name(cfg)}_state_dict.pth')
-            wandb.log({'<epoch> Valid Loss': swa_loss})
-        
         wandb.finish()
 
 
