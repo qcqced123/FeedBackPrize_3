@@ -65,6 +65,7 @@
         "anneal_strategy": "cos"
     },
     "model_utils": {
+        "stop_mode": "min",
         "freeze": true,
         "num_freeze": 4,
         "reinit": true,

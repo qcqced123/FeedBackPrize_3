@@ -21,12 +21,17 @@ def train_loop(cfg: any) -> None:
     fold_list = [i for i in range(cfg.n_folds)]
     for fold in tqdm(fold_list[2:]):
         print(f'============== {fold}th Fold Train & Validation ==============')
-        wandb.init(project=cfg.name,
-                   name=f'[{cfg.model_arch}]' + f'fold{fold}/' + cfg.model,
-                   config=class2dict(cfg),
-                   group=f'{cfg.pooling}/max_length_{cfg.max_len}/{cfg.model}',
-                   job_type='train',
-                   entity="qcqced")
+        wandb.init(
+            project=cfg.name,
+            name=f'[{cfg.model_arch}]' + f'fold{fold}/' + cfg.model,
+            config=class2dict(cfg),
+            group=f'{cfg.pooling}/max_length_{cfg.max_len}/{cfg.model}',
+            job_type='train',
+            entity="qcqced"
+        )
+        early_stopping = EarlyStopping(mode=cfg.stop_mode)
+        early_stopping.detecting_anomaly()
+
         val_score_max, fold_swa_loss = np.inf, []
         train_input = getattr(trainer, cfg.name)(cfg, g)  # init object
         loader_train, loader_valid, train = train_input.make_batch(fold)
@@ -58,6 +63,11 @@ def train_loop(cfg: any) -> None:
                 torch.save(model.state_dict(),
                            f'{cfg.checkpoint_dir}fold{fold}_{cfg.pooling}_{cfg.max_len}_{get_name(cfg)}_state_dict.pth')
                 val_score_max = valid_loss
+
+            # Check if Trainer need to Early Stop
+            early_stopping(valid_loss)
+            if early_stopping.early_stop:
+                break
 
             del train_loss, valid_loss, grad_norm, lr
             gc.collect(), torch.cuda.empty_cache()

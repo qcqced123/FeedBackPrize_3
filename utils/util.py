@@ -138,6 +138,7 @@ def sync_config(json_config: json) -> None:
     CFG.anneal_strategy = json_config.swa_options.anneal_strategy
 
     """ model_utils """
+    CFG.stop_mode = json_config.model_utils.stop_mode
     CFG.reinit = json_config.model_utils.reinit
     CFG.num_freeze = json_config.model_utils.num_freeze
     CFG.num_reinit = json_config.model_utils.num_reinit

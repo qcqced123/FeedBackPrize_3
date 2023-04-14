@@ -70,6 +70,7 @@ class CFG:
     anneal_strategy = 'cos'  # default = cos, available option: linear
 
     """ Model_Utils Options """
+    stop_mode = 'min'
     freeze = False
     num_freeze = 2
     reinit = True

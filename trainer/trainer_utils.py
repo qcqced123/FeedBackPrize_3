@@ -1,4 +1,5 @@
 import re
+import numpy as np
 import torch
 import transformers
 from torch import Tensor
@@ -182,27 +183,51 @@ def postprocess(pseudo_label):
             instance[idx] = label_dict[(torch.abs(label_dict - instance[idx]) == min(torch.abs(label_dict - instance[idx]))).nonzero(as_tuple=False)]
     return pseudo_label
 
-class EarlyStopping:
-    def __init__(self, patience: int, mode='min', min_delta=0):
-        """ EarlyStopping handler can be used to stop the training if no improvement after a given number of events.
 
-        Args:
-            patience: Number of events to wait if no improvement and then stop the training.
-            mode: Choose EarlyStopping Standard which is depend on your metric,  default = 'min'
-            min_delta: A minimum increase in the score to qualify as an improvement,
-                i.e. an increase of less than or equal to `min_delta`, will count as no improvement.
-            cumulative_delta: It True, `min_delta` defines an increase since the last `patience` reset, otherwise,
-                it defines an increase after the last event. Default value is False.
+class EarlyStopping(object):
+    """
+    Monitor a metric and stop training when it stops improving.
 
-        [Reference]
-        1) https://pytorch.org/ignite/_modules/ignite/handlers/early_stopping.html#EarlyStopping
-        2) https://teddylee777.github.io/pytorch/early-stopping/
-        """
-        def __init__():
-            super().__init__()
-            self.patience = patience
-            self.mode = mode
-            self.min_delta = min_delta
+    Args:
+        mode: 'min' for loss base val_score for loss, 'max' for metric base val_score
+        patience: number of checks with no improvement, default = 3
+        min_delta: minimum change in the monitored quantity to qualify as an improvement, i.e. an absolute
+            change of less than or equal to `min_delta`, will count as no improvement. default = 0.0
+        detect_anomaly: When set ``True``, stops training when the monitor becomes NaN or infinite, etc
+                        default = True
+    """
+    def __init__(self, mode: str, patience: int = 3, min_delta: float = 0.0, detect_anomaly: bool = True):
+        self.mode = mode
+        self.early_stop = False
+        self.patience = patience
+        self.counter = 0
+        self.detect_anomaly = detect_anomaly
+        self.val_score = -np.inf
 
-        def __call__():
-            return
+        if self.mode == 'min':
+            self.val_score = np.inf
+
+    def detecting_anomaly(self) -> None:
+        """ Detecting Trainer's Error and Stop train loop """
+        torch.autograd.set_detect_anomaly(self.detect_anomaly)
+        return
+
+    def __call__(self, score: any) -> None:
+        """ When call by Trainer Loop, Check Trainer need to early stopping """
+        if self.mode == 'min':
+            if self.val_score >= score:
+                self.counter = 0
+                self.val_score = score
+            else:
+                self.counter += 1
+
+        if self.mode == 'max':
+            if score >= self.val_score:
+                self.counter = 0
+                self.val_score = score
+            else:
+                self.counter += 1
+
+        if self.counter >= self.patience:
+            self.early_stop = True
+            print('Early STOP')
