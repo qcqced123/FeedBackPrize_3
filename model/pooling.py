@@ -56,9 +56,12 @@ class GEMPooling(nn.Module):
     """
     Generalized Mean Pooling for Natural Language Processing
     This class version of GEMPooling for NLP, Transfer from Computer Vision Task Code
+
     Mean Pooling <= GEMPooling <= Max Pooling
     Because of doing exponent to each token embeddings, GEMPooling is like as weight to more activation token
 
+    In original paper, they use p=3, but in this class, we use p=4 because torch doesn't support pow calculation
+    for negative value tensor, only for non-negative value in odd number exponent
     [Reference]
     https://paperswithcode.com/method/generalized-mean-pooling
     """
@@ -66,7 +69,7 @@ class GEMPooling(nn.Module):
         super(GEMPooling, self).__init__()
 
     @staticmethod
-    def forward(self, last_hidden_state, attention_mask, p: int = 3) -> Tensor:
+    def forward(last_hidden_state, attention_mask, p: int = 4) -> Tensor:
         """
         1) Expand Attention Mask from [batch_size, max_len] to [batch_size, max_len, hidden_size]
         2) Sum Embeddings along max_len axis so now we have [batch_size, hidden_size]
@@ -79,7 +82,8 @@ class GEMPooling(nn.Module):
         )
         sum_mask = input_mask_expanded.sum(1)
         sum_mask = torch.clamp(sum_mask, min=1e-9)
-        gem_embeddings = torch.pow(sum_embeddings / sum_mask, 1/p)
+        tmp_embeddings = sum_embeddings / sum_mask
+        gem_embeddings = torch.pow(tmp_embeddings, 1/p)
         return gem_embeddings
 
 

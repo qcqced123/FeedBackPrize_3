@@ -200,6 +200,7 @@ class EarlyStopping(object):
         self.mode = mode
         self.early_stop = False
         self.patience = patience
+        self.min_delta = min_delta
         self.counter = 0
         self.detect_anomaly = detect_anomaly
         self.val_score = -np.inf

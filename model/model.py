@@ -10,6 +10,7 @@ class FBPModel(nn.Module):
     """ Model class for Baseline Pipeline """
     def __init__(self, cfg):
         super().__init__()
+        self.cfg = cfg
         self.auto_cfg = AutoConfig.from_pretrained(
             cfg.model,
             output_hidden_states=True
@@ -57,8 +58,13 @@ class FBPModel(nn.Module):
 
     def forward(self, inputs: dict) -> list[Tensor]:
         outputs = self.feature(inputs)
+        if self.cfg.pooling == 'WeightedLayerPooling':
+            outputs_feature = outputs.all_hidden_states
+        else:
+            outputs_feature = outputs.last_hidden_state
+
         embedding = self.pooling(
-            outputs.last_hidden_state,
+            outputs_feature,
             inputs['attention_mask']
         )
         logit = self.fc(embedding)

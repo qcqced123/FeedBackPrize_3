@@ -14,7 +14,7 @@ class CFG:
     model_arch = 'FBPModel'  # model.model.py -> FBPModel, MPLModel
     model = 'microsoft/deberta-v3-large'
     tokenizer = AutoTokenizer.from_pretrained(model)
-    pooling = 'MeanPooling'  # mean, attention, max, weightedlayer, concat, conv1d, lstm
+    pooling = 'WeightedLayerPooling'  # mean, attention, max, weightedlayer, concat, conv1d, lstm
 
     """ Common Options """
     wandb = True
