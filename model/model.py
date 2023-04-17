@@ -58,19 +58,11 @@ class FBPModel(nn.Module):
 
     def forward(self, inputs: dict) -> list[Tensor]:
         outputs = self.feature(inputs)
+        feature = outputs.last_hidden_state
         if self.cfg.pooling == 'WeightedLayerPooling':
-            """ Original [CLS] Pooling => Append to Mean Pooling """
-            embedding = self.pooling(
-                outputs.hidden_states,
-                inputs['attention_mask']
-            )
-            logit = self.fc(embedding)
-        else:
-            embedding = self.pooling(
-                outputs.last_hidden_state,
-                inputs['attention_mask']
-            )
-            logit = self.fc(embedding)
+            feature = outputs.hidden_states
+        embedding = self.pooling(feature, inputs['attention_mask'])
+        logit = self.fc(embedding)
         return logit
 
 

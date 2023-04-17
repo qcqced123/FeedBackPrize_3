@@ -11,9 +11,12 @@ class WeightedLayerPooling(nn.Module):
     In Original Paper, they use [CLS] token for classification task.
     But in common sense, Mean Pooling more good performance than CLS token Pooling
     So, we append Last part of this Pooling Method, Using CLS Token then Mean Pooling Embedding
-
+    Args:
+        auto_cfg: AutoConfig from model class member variable
+        layer_start: start layer for pooling, default 4
+        layer_weights: layer weights for pooling, default None
     """
-    def __init__(self, auto_cfg, layer_start: int = 4, layer_weights = None):
+    def __init__(self, auto_cfg, layer_start: int = 4, layer_weights=None):
         super(WeightedLayerPooling, self).__init__()
         self.layer_start = layer_start
         self.num_hidden_layers = auto_cfg.num_hidden_layers
@@ -30,7 +33,7 @@ class WeightedLayerPooling(nn.Module):
         input_mask_expanded = attention_mask.unsqueeze(-1).expand(weighted_average.size()).float()
         sum_embeddings = torch.sum(weighted_average * input_mask_expanded, 1)
         sum_mask = input_mask_expanded.sum(1)
-        sum_mask = torch.clamp(sum_mask, min=1e-9)  # if lower than threshold, replace value to threshold (parameter min)
+        sum_mask = torch.clamp(sum_mask, min=1e-9)  # if lower than thres, replace value to threshold (parameter min)
         weighted_mean_embeddings = sum_embeddings / sum_mask
         return weighted_mean_embeddings
 
