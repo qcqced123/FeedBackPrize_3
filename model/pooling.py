@@ -6,6 +6,13 @@ import torch.nn.functional as F
 
 # WeightedLayerPooling: Use Intermediate Layer's Embedding
 class WeightedLayerPooling(nn.Module):
+    """
+    For Weighted Layer Pooling Class
+    In Original Paper, they use [CLS] token for classification task.
+    But in common sense, Mean Pooling more good performance than CLS token Pooling
+    So, we append Last part of this Pooling Method, Using CLS Token then Mean Pooling Embedding
+
+    """
     def __init__(self, auto_cfg, layer_start: int = 4, layer_weights = None):
         super(WeightedLayerPooling, self).__init__()
         self.layer_start = layer_start
@@ -15,12 +22,17 @@ class WeightedLayerPooling(nn.Module):
                 torch.tensor([1] * (self.num_hidden_layers + 1 - layer_start), dtype=torch.float)
             )
 
-    def forward(self, all_hidden_states) -> Tensor:
+    def forward(self, all_hidden_states, attention_mask) -> Tensor:
         all_layer_embedding = torch.stack(list(all_hidden_states), dim=0)
         all_layer_embedding = all_layer_embedding[self.layer_start:, :, :, :]
         weight_factor = self.layer_weights.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).expand(all_layer_embedding.size())
         weighted_average = (weight_factor*all_layer_embedding).sum(dim=0) / self.layer_weights.sum()
-        return weighted_average
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(weighted_average.size()).float()
+        sum_embeddings = torch.sum(weighted_average * input_mask_expanded, 1)
+        sum_mask = input_mask_expanded.sum(1)
+        sum_mask = torch.clamp(sum_mask, min=1e-9)  # if lower than threshold, replace value to threshold (parameter min)
+        weighted_mean_embeddings = sum_embeddings / sum_mask
+        return weighted_mean_embeddings
 
 
 # Attention pooling

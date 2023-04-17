@@ -1,0 +1,105 @@
+{
+    "os": "Linux-5.19.0-38-generic-x86_64-with-glibc2.35",
+    "python": "3.9.13",
+    "heartbeatAt": "2023-04-17T05:08:09.168557",
+    "startedAt": "2023-04-17T05:08:08.567122",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/home/qcqced/\ubc14\ud0d5\ud654\uba74/ML_Test/FeedBackPrize_3/train.py",
+    "codePath": "train.py",
+    "git": {
+        "remote": "https://github.com/qcqced123/FeedBackPrize_3.git",
+        "commit": "a9dee57651df3107f5aadd11b351bf2f5f66b592"
+    },
+    "email": "97833081+qcqced123@users.noreply.github.com",
+    "root": "/home/qcqced/\ubc14\ud0d5\ud654\uba74/ML_Test/FeedBackPrize_3",
+    "host": "qcqced-B550M-H",
+    "username": "qcqced",
+    "executable": "/home/qcqced/anaconda3/bin/python",
+    "cpu_count": 6,
+    "cpu_count_logical": 12,
+    "cpu_freq": {
+        "current": 3.22125,
+        "min": 2200.0,
+        "max": 3700.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2.2,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 2.2,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 2.922,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3.657,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3.895,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3.7,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3.483,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3.298,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3.284,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3.604,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 2.2,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 4.212,
+            "min": 2200.0,
+            "max": 3700.0
+        }
+    ],
+    "disk": {
+        "total": 107.66527938842773,
+        "used": 74.21305847167969
+    },
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 3090",
+            "memory_total": 25769803776
+        }
+    ],
+    "memory": {
+        "total": 23.37734603881836
+    }
+}

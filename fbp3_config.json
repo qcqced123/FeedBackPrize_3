@@ -2,7 +2,7 @@
     "pipeline_setting": {
         "train": true,
         "test": false,
-        "checkpoint_dir": "./saved/model/fine_tuned_meanpool/",
+        "checkpoint_dir": "./saved/model/fine_tuned_weightedlayer/",
         "resume": false,
         "state_dict": "MPL_Student_microsoft-deberta-v3-large_state_dict.pth",
         "name": "FBPTrainer",
@@ -10,7 +10,7 @@
         "dataset": "FBPDataset",
         "model_arch": "FBPModel",
         "model": "microsoft/deberta-v3-large",
-        "pooling": "MeanPooling"
+        "pooling": "WeightedLayerPooling"
     },
     "common_settings": {
         "wandb": true,
@@ -67,9 +67,9 @@
     "model_utils": {
         "stop_mode": "min",
         "freeze": true,
-        "num_freeze": 8,
+        "num_freeze": 4,
         "reinit": true,
-        "num_reinit": 2,
+        "num_reinit": 4,
         "awp": false,
         "nth_awp_start_epoch": 0,
         "awp_eps": 1e-2,
