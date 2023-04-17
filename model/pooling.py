@@ -13,10 +13,10 @@ class WeightedLayerPooling(nn.Module):
     So, we append Last part of this Pooling Method, Using CLS Token then Mean Pooling Embedding
     Args:
         auto_cfg: AutoConfig from model class member variable
-        layer_start: start layer for pooling, default 4
+        layer_start: how many layers do you want to use, default 21 (last 4 layers)
         layer_weights: layer weights for pooling, default None
     """
-    def __init__(self, auto_cfg, layer_start: int = 4, layer_weights=None):
+    def __init__(self, auto_cfg, layer_start: int = 21, layer_weights=None):
         super(WeightedLayerPooling, self).__init__()
         self.layer_start = layer_start
         self.num_hidden_layers = auto_cfg.num_hidden_layers

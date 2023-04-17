@@ -159,7 +159,7 @@ class FBPTrainer:
         valid_loss = valid_losses.avg.detach().cpu().numpy()
         return valid_loss
 
-    def swa_fn(self, loader_valid, swa_model, criterion):
+    def swa_fn(self, loader_valid, swa_model, val_criterion):
         """ Validation Function by Stochastic Weight Averaging """
         swa_model.eval()
         swa_valid_losses = AverageMeter()
@@ -174,7 +174,7 @@ class FBPTrainer:
                 swa_labels = swa_labels.to(self.cfg.device)
                 batch_size = swa_labels.size(0)
                 swa_preds = swa_model(swa_inputs)
-                swa_valid_loss = criterion(swa_preds, swa_labels)
+                swa_valid_loss = val_criterion(swa_preds, swa_labels)
                 swa_valid_losses.update(swa_valid_loss, batch_size)
         swa_loss = swa_valid_losses.avg.detach().cpu().numpy()
         return swa_loss
