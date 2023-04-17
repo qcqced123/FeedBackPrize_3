@@ -2,7 +2,7 @@
     "pipeline_setting": {
         "train": true,
         "test": false,
-        "checkpoint_dir": "./saved/model/fine_tuned_weightlayer/",
+        "checkpoint_dir": "./saved/model/fine_tuned_weightedlayer/",
         "resume": false,
         "state_dict": "MPL_Student_microsoft-deberta-v3-large_state_dict.pth",
         "name": "FBPTrainer",

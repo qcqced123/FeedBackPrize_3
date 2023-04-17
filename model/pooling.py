@@ -6,26 +6,21 @@ import torch.nn.functional as F
 
 # WeightedLayerPooling: Use Intermediate Layer's Embedding
 class WeightedLayerPooling(nn.Module):
-    def __init__(self, auto_cfg, layer_start: int = 4, layer_weights=None):
+    def __init__(self, auto_cfg, layer_start: int = 4, layer_weights = None):
         super(WeightedLayerPooling, self).__init__()
         self.layer_start = layer_start
         self.num_hidden_layers = auto_cfg.num_hidden_layers
         self.layer_weights = layer_weights if layer_weights is not None \
             else nn.Parameter(
-                torch.tensor([1] * (self.num_hidden_layers+1 - layer_start), dtype=torch.float)
+                torch.tensor([1] * (self.num_hidden_layers + 1 - layer_start), dtype=torch.float)
             )
 
-    def forward(self, features) -> Tensor:
-        ft_all_layers = features['all_layer_embeddings']
-
-        all_layer_embedding = torch.stack(ft_all_layers)
+    def forward(self, all_hidden_states) -> Tensor:
+        all_layer_embedding = torch.stack(list(all_hidden_states), dim=0)
         all_layer_embedding = all_layer_embedding[self.layer_start:, :, :, :]
-
         weight_factor = self.layer_weights.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).expand(all_layer_embedding.size())
         weighted_average = (weight_factor*all_layer_embedding).sum(dim=0) / self.layer_weights.sum()
-
-        features.update({'token_embeddings': weighted_average})
-        return features
+        return weighted_average
 
 
 # Attention pooling

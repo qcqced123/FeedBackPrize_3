@@ -59,15 +59,14 @@ class FBPModel(nn.Module):
     def forward(self, inputs: dict) -> list[Tensor]:
         outputs = self.feature(inputs)
         if self.cfg.pooling == 'WeightedLayerPooling':
-            outputs_feature = outputs.all_hidden_states
+            embedding = self.pooling(outputs.hidden_states)
+            logit = self.fc(embedding)
         else:
-            outputs_feature = outputs.last_hidden_state
-
-        embedding = self.pooling(
-            outputs_feature,
-            inputs['attention_mask']
-        )
-        logit = self.fc(embedding)
+            embedding = self.pooling(
+                outputs.last_hidden_state,
+                inputs['attention_mask']
+            )
+            logit = self.fc(embedding)
         return logit
 
 
