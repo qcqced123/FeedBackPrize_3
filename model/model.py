@@ -21,10 +21,11 @@ class FBPModel(nn.Module):
         )
         self.fc = nn.Linear(self.auto_cfg.hidden_size, 6)
         self.pooling = getattr(pooling, cfg.pooling)(self.auto_cfg)
-        self.model.load_state_dict(
-            torch.load(cfg.checkpoint_dir + cfg.state_dict),
-            strict=False
-        )  # load student model's weight: it already has fc layer, so need to init fc layer later
+        if self.cfg.load_pretrained:
+            self.model.load_state_dict(
+                torch.load(cfg.checkpoint_dir + cfg.state_dict),
+                strict=False
+            )  # load student model's weight: it already has fc layer, so need to init fc layer later
 
         if cfg.reinit:
             self._init_weights(self.fc)

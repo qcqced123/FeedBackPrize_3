@@ -2,7 +2,8 @@
     "pipeline_setting": {
         "train": true,
         "test": false,
-        "checkpoint_dir": "./saved/model/fine_tuned_weightedlayer/",
+        "checkpoint_dir": "./saved/model/fine_tuned_gempool/",
+        "load_pretrained": false,
         "resume": false,
         "state_dict": "MPL_Student_microsoft-deberta-v3-large_state_dict.pth",
         "name": "FBPTrainer",
@@ -19,13 +20,13 @@
         "seed": 42,
         "n_gpu": 1,
         "gpu_id": 0,
-        "num_workers": 0
+        "num_workers": 4
     },
     "data_settings": {
         "n_folds": 5,
-        "max_len": 1024,
-        "epochs": 10,
-        "batch_size": 8
+        "max_len": 512,
+        "epochs": 5,
+        "batch_size": 32
     },
     "gradient_settings": {
         "amp_scaler": false,
@@ -60,7 +61,7 @@
     },
     "swa_options": {
         "swa": true,
-        "swa_lr": 5e-6,
+        "swa_lr": 1e-6,
         "anneal_epochs": 1,
         "anneal_strategy": "cos"
     },
@@ -70,8 +71,8 @@
         "num_freeze": 4,
         "reinit": true,
         "num_reinit": 2,
-        "awp": false,
-        "nth_awp_start_epoch": 0,
+        "awp": true,
+        "nth_awp_start_epoch": 2,
         "awp_eps": 1e-2,
         "awp_lr": 1e-4
     }

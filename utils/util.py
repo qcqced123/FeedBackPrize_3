@@ -78,6 +78,7 @@ def sync_config(json_config: json) -> None:
     """ Pipeline Options """
     CFG.train, CFG.test = json_config.pipeline_setting.train, json_config.pipeline_setting.test
     CFG.checkpoint_dir = json_config.pipeline_setting.checkpoint_dir
+    CFG.load_pretrained = json_config.pipeline_setting.load_pretrained
     CFG.resume, CFG.state_dict = json_config.pipeline_setting.resume, json_config.pipeline_setting.state_dict
     CFG.name = json_config.pipeline_setting.name
     CFG.loop = json_config.pipeline_setting.loop
