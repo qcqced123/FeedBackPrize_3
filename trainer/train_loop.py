@@ -23,9 +23,9 @@ def train_loop(cfg: any) -> None:
         print(f'============== {fold}th Fold Train & Validation ==============')
         wandb.init(
             project=cfg.name,
-            name=f'[{cfg.model_arch}]' + f'fold{fold}/' + cfg.model,
+            name=f'No_MPL[{cfg.model_arch}]' + f'fold{fold}/' + cfg.model,
             config=class2dict(cfg),
-            group=f'{cfg.pooling}/max_length_{cfg.max_len}/{cfg.model}',
+            group=f'No_MPL{cfg.pooling}/max_length_{cfg.max_len}/{cfg.model}',
             job_type='train',
             entity="qcqced"
         )

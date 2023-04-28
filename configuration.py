@@ -7,7 +7,7 @@ class CFG:
     """ Pipeline Setting """
     train, test = True, False
     checkpoint_dir = './saved/model'
-    resume, state_dict = True, '/'
+    resume, load_pretrained,  state_dict = True, False, '/'
     name = 'FBP3_Base_Train_Pipeline'
     loop = 'mpl_loop'
     dataset = 'FBPDataset'  # dataset_class.dataclass.py -> FBPDataset, MPLDataset
