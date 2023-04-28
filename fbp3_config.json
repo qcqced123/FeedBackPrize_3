@@ -60,7 +60,7 @@
     },
     "swa_options": {
         "swa": true,
-        "swa_lr": 5e-6,
+        "swa_lr": 1e-6,
         "anneal_epochs": 1,
         "anneal_strategy": "cos"
     },

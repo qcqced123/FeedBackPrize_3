@@ -97,7 +97,7 @@ class AWP:
         criterion,
         optimizer,
         awp: bool,
-        adv_param: str="weight",
+        adv_param: str = "weight",
         adv_lr: float=1.0,
         adv_eps: float=0.01
     ) -> None:

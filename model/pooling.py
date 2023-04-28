@@ -10,13 +10,13 @@ class WeightedLayerPooling(nn.Module):
     For Weighted Layer Pooling Class
     In Original Paper, they use [CLS] token for classification task.
     But in common sense, Mean Pooling more good performance than CLS token Pooling
-    So, we append Last part of this Pooling Method, Using CLS Token then Mean Pooling Embedding
+    So, we append last part of this Pooling Method, Mean Pooling Embedding instad of Using CLS Token
     Args:
         auto_cfg: AutoConfig from model class member variable
         layer_start: how many layers do you want to use, default 21 (last 4 layers)
         layer_weights: layer weights for pooling, default None
     """
-    def __init__(self, auto_cfg, layer_start: int = 12, layer_weights=None):
+    def __init__(self, auto_cfg, layer_start: int = 12, layer_weights=None) -> None:
         super(WeightedLayerPooling, self).__init__()
         self.layer_start = layer_start
         self.num_hidden_layers = auto_cfg.num_hidden_layers
@@ -41,10 +41,10 @@ class WeightedLayerPooling(nn.Module):
 # Attention pooling
 class AttentionPooling(nn.Module):
     """
-    [Reference]
-    <A STRUCTURED SELF-ATTENTIVE SENTENCE EMBEDDING>
+    Reference:
+        <A STRUCTURED SELF-ATTENTIVE SENTENCE EMBEDDING>
     """
-    def __init__(self, auto_cfg):
+    def __init__(self, auto_cfg) -> None:
         super().__init__()
         self.attention = nn.Sequential(
            nn.Linear(auto_cfg.hidden_size, auto_cfg.hidden_size),
@@ -75,7 +75,7 @@ class GEMPooling(nn.Module):
     [Reference]
     https://paperswithcode.com/method/generalized-mean-pooling
     """
-    def __init__(self, auto_cfg):
+    def __init__(self, auto_cfg) -> None:
         super(GEMPooling, self).__init__()
 
     @staticmethod

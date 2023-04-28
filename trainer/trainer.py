@@ -190,11 +190,11 @@ class MPLTrainer:
 
     Teacher Model
         train/validation: Supervised Data => use FBPDataset class, need to split for validation
-        inference: Unsupervised Data for make pseudo labels => 구현 필요
+        inference: Unsupervised Data for make pseudo labels
         loss: supervised loss + student validation loss
 
     Student Model
-        train: Unsupervised Data with pseudo labels => 구현 필요
+        train: Unsupervised Data with pseudo labels
         validation: Supervised Data => use FBPDataset class, no split for validation
         loss:
 
@@ -316,11 +316,11 @@ class MPLTrainer:
             s: student model
             s_valid_loss: student model's validation loss by original label data
 
-        [Paper]
-        teacher loss: supervised task loss + Unsupervised task loss + student model's validation loss
-        student loss: meta pseudo label loss
+        Paper:
+            teacher loss: supervised task loss + Unsupervised task loss + student model's validation loss
+            student loss: meta pseudo label loss
 
-        but, I use only supervised task loss + meta pseudo label loss for teacher loss
+            but, we use only supervised task loss + meta pseudo label loss for teacher loss
         """
         torch.autograd.set_detect_anomaly(True)
         t_scaler = torch.cuda.amp.GradScaler(enabled=self.cfg.amp_scaler)

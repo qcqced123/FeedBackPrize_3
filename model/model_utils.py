@@ -1,4 +1,7 @@
+import math
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch import Tensor
 
 
@@ -57,4 +60,3 @@ def reinit_topk(model, num_layers):
     """
     if num_layers > 0:
         model.encoder.layer[-num_layers:].apply(model._init_weights)
-
