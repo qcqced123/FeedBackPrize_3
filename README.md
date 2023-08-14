@@ -9,7 +9,10 @@ ___
 -  To assess the language proficiency of 8th-12th grade English Language Learners (ELLs). Utilizing a dataset of essays written by ELLs will help to develop proficiency models that better supports all students.
 ___
 ### Strategy
-#### **[Various Model Ensemble]**  
+#### **[Various Model Ensemble]**
+
+![Modeling Overview](/assets/modeling_overview.png)
+
 **Type 1. From Meta-Pseudo Label, Make Various Model**  
 * **Make Best Single Fine-Tuned Model from Competition Data**
     - Backbone: DeBERTa-V3-Large
