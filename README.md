@@ -1,22 +1,14 @@
-# FeedBackPrize - English Language Learning
+# [Kaggle Competition] FeedBackPrize - English Language Learning
+___
+## Final Score
+- Private Score: 0.436454
+- Rank: 367/2654, 13.8%
 
-## 요약 정보
-* 도전기관 : 시큐레이어
-* 도전자 : 이정환
-* 최종 스코어 : 0.436454
-* 제출 일자 : 2023-04-24
-* 총 참여 팀수 : 2654
-* 순위 및 비율 : 239 (9.00%)
 ___
-## 결과 화면
-
-![final_rank_and_score](./img/STRIPAI_Final_Score.png)
-![final_rank_and_score](./img/FBP3_Final_Rank.png)
+## Competition Summary
+-  To assess the language proficiency of 8th-12th grade English Language Learners (ELLs). Utilizing a dataset of essays written by ELLs will help to develop proficiency models that better supports all students.
 ___
-## 대회 개요
-- 초등학생의 작문 숙제 데이터를 활용, 6가지 평가 요소를 자동으로 예측하는 모델을 구축하는 것이 목적
-___
-## 사용한 방법 & 알고리즘
+## Strategy
 ### **[Various Model Ensemble]**  
 **Type 1. From Meta-Pseudo Label, Make Various Model**  
 * **Make Best Single Fine-Tuned Model from Competition Data**
@@ -64,7 +56,7 @@ ___
     - Regression with RAPID's SVR
 
 ___
-# 참고자료  
+# Reference  
 ##### https://www.kaggle.com/competitions/mayo-clinic-strip-ai/overview
 ##### https://www.kaggle.com/competitions/feedback-prize-english-language-learning/discussion/351577
 ##### https://www.kaggle.com/competitions/feedback-prize-english-language-learning/discussion/369609
