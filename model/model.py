@@ -49,7 +49,7 @@ class FBPModel(nn.Module):
             if module.padding_idx is not None:
                 module.weight.data[module.padding_idx].zero_()
         elif isinstance(module, nn.LayerNorm):
-            """ reference from torch.nn.Layernorm with elementwise_affine=True "" "
+            """ reference from torch.nn.Layernorm with elementwise_affine=True """
             module.weight.data.fill_(1.0)
             module.bias.data.zero_()
 
