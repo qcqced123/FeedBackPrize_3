@@ -1,3 +1,5 @@
+import os
+
 import optuna
 import argparse, collections
 from omegaconf import OmegaConf
@@ -8,7 +10,8 @@ from parse_config import ConfigParser
 from configuration import CFG
 from utils.helper import check_library, all_type_seed
 from utils import sync_config
-
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["LRU_CACHE_CAPACITY"] = "1"
 
 check_library(True)
 all_type_seed(CFG, True)

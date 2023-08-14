@@ -53,7 +53,7 @@ class AttentionPooling(nn.Module):
            nn.Linear(auto_cfg.hidden_size, 1),
         )
 
-    def forward(self, last_hidden_state, attention_mask) -> Tensor:
+    def forward(self, last_hidden_state, attention_mask: list[Tensor]) -> Tensor:
         w = self.attention(last_hidden_state).float()
         w[attention_mask == 0] = float('-inf')
         w = torch.softmax(w, 1)

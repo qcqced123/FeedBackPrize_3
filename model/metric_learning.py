@@ -25,7 +25,7 @@ class SelectDistances(nn.Module):
 
     def select_distance(self, x: Tensor, y: Tensor) -> Tensor:
         if self.metrics == 'cosine':
-            distance_metric = 1 - F.cosine_similarity(x, y)
+            distance_metric = 1 - F.cosine_similarity(x, y)  # Cosine Distance
         elif self.metrics == 'euclidean':
             distance_metric = F.pairwise_distance(x, y, p=2)
         else:
@@ -118,13 +118,17 @@ class MultipleNegativeRankingLoss(nn.Module):
 # Arcface + CrossEntropy
 class ArcMarginProduct(nn.Module):
     """
-    Implementation of ArcFace Loss
+    Implementation of ArcFace Loss, which is part of Metric Learning
+    main concept of algorithm is same as other metric learning, but this method add margin to angular directly
+
     Args:
         in_features: size of each input sample
         out_features: size of each output sample
         s: norm of input feature
         m: margin
+
     Reference:
+        https://arxiv.org/abs/1801.07698
         https://github.com/lyakaap/Landmark2019-1st-and-3rd-Place-Solution/blob/master/src/modeling/metric_learning.py
     """
 
