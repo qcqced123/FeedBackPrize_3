@@ -72,7 +72,6 @@ class PearsonLoss(nn.Module):
 class WeightedMSELoss(nn.Module):
     """
     Weighted MSE Loss
-
     [Reference]
     https://www.kaggle.com/competitions/feedback-prize-english-language-learning/discussion/369793
     """
