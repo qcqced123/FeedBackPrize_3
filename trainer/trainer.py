@@ -176,6 +176,7 @@ class FBPTrainer:
                 swa_preds = swa_model(swa_inputs)
                 swa_valid_loss = val_criterion(swa_preds, swa_labels)
                 swa_valid_losses.update(swa_valid_loss, batch_size)
+
         swa_loss = swa_valid_losses.avg.detach().cpu().numpy()
         return swa_loss
 
